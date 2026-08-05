@@ -1,0 +1,499 @@
+#!/usr/bin/env python3
+"""
+📜  JARVIS – a self‑modifying, git‑aware chatbot for Termux/Ubuntu.
+
+Dependencies
+-------------
+pip install --upgrade openai python-dotenv gitpython gtts rich
+
+Environment file (.env)
+-----------------------
+NVIDIA_API_KEY=xxxxxxxx                 # required
+GITHUB_TOKEN=xxxxxxxx                   # optional – for GitHub operations
+GITHUB_REPO_URL=https://github.com/YOUR_USER/YOUR_REPO.git
+"""
+
+# ------------------------------------------------------------------
+# 1. Imports
+# ------------------------------------------------------------------
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+from datetime import datetime
+from pathlib import Path
+
+import git
+from dotenv import load_dotenv
+from gtts import gTTS
+from openai import OpenAI
+from rich.console import Console
+from rich.panel import Panel
+
+# ------------------------------------------------------------------
+# 2. Environment & Client initialisation
+# ------------------------------------------------------------------
+load_dotenv()
+
+console = Console()
+
+# NVIDIA NIM credentials -------------------------------------------------
+nvidia_key = os.getenv("NVIDIA_API_KEY")
+if not nvidia_key:
+    console.print("[bold red]ERROR: NVIDIA_API_KEY not found in .env[/bold red]")
+    sys.exit(1)
+
+# GitHub settings ----------------------------------------------------------
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_REPO_URL = os.getenv(
+    "GITHUB_REPO_URL", "https://github.com/b3icedrage/jarvis-ai.git"
+)
+
+if not GITHUB_TOKEN:
+    console.print(
+        "[bold yellow]WARNING: GITHUB_TOKEN not set – GitHub features disabled[/bold yellow]"
+    )
+
+# OpenAI client pointing at NVIDIA's endpoint
+client = OpenAI(
+    base_url="https://integrate.api.nvidia.com/v1",
+    api_key=nvidia_key,
+)
+
+# ------------------------------------------------------------------
+# 3. Paths & constants
+# ------------------------------------------------------------------
+HOME = Path.home()
+JARVIS_DIR = HOME / "jarvis"
+JARVIS_FILE = JARVIS_DIR / "jarvis.py"          # this very script
+BACKUP_FILE = JARVIS_DIR / "jarvis.py.bak"
+HISTORY_FILE = JARVIS_DIR / "history.json"
+
+# Ensure a working directory exists
+JARVIS_DIR.mkdir(parents=True, exist_ok=True)
+
+# ------------------------------------------------------------------
+# 4. Git helpers
+# ------------------------------------------------------------------
+def init_git_repo() -> git.Repo | None:
+    """Create or attach to a Git repo under `JARVIS_DIR`."""
+    try:
+        if (JARVIS_DIR / ".git").exists():
+            repo = git.Repo(JARVIS_DIR)
+            console.print("[bold green]✓ Connected to existing Git repository[/bold green]")
+            return repo
+
+        repo = git.Repo.init(JARVIS_DIR)
+        console.print("[bold green]✓ Initialized new Git repository[/bold green]")
+
+        if GITHUB_TOKEN and GITHUB_REPO_URL:
+            auth_url = GITHUB_REPO_URL.replace(
+                "https://", f"https://{GITHUB_TOKEN}@"
+            )
+            repo.create_remote("origin", auth_url)
+            console.print("[bold green]✓ Added remote origin[/bold green]")
+
+        return repo
+    except Exception as e:
+        console.print(f"[bold red]Git init error: {e}[/bold red]")
+        return None
+
+
+def git_commit(message: str) -> str:
+    """Commit all current staged changes."""
+    try:
+        repo = git.Repo(JARVIS_DIR)
+        repo.git.add("-A")           # stage everything
+
+        if repo.is_dirty(untracked_files=True):
+            commit = repo.index.commit(message)
+            return f"Committed [{commit.hexsha[:8]}] – {message}"
+        else:
+            return "No changes to commit."
+    except Exception as e:
+        return f"Git commit error: {e}"
+
+
+def git_push() -> str:
+    if not GITHUB_TOKEN:
+        return "GitHub token not configured – cannot push."
+    try:
+        repo = git.Repo(JARVIS_DIR)
+        origin = repo.remote("origin")
+        origin.push()
+        return "Successfully pushed to GitHub."
+    except Exception as e:
+        return f"Git push error: {e}"
+
+
+def git_pull() -> str:
+    if not GITHUB_TOKEN:
+        return "GitHub token not configured – cannot pull."
+    try:
+        repo = git.Repo(JARVIS_DIR)
+        origin = repo.remote("origin")
+        origin.pull()
+        return "Successfully pulled from GitHub."
+    except Exception as e:
+        return f"Git pull error: {e}"
+
+
+def git_status() -> str:
+    try:
+        return git.Repo(JARVIS_DIR).git.status()
+    except Exception as e:
+        return f"Git status error: {e}"
+
+
+def git_log(limit: int = 5) -> str:
+    try:
+        return git.Repo(JARVIS_DIR).git.log(f"--oneline -{limit}")
+    except Exception as e:
+        return f"Git log error: {e}"
+
+
+# ------------------------------------------------------------------
+# 5. File helpers (self‑modification safety)
+# ------------------------------------------------------------------
+def expand_path(p: str | Path) -> Path:
+    """Return an absolute Path, expanding ~ if needed."""
+    return Path(p).expanduser().resolve()
+
+
+def read_file(filepath: str | Path) -> str:
+    """Return the full content of a file, or an error message."""
+    p = expand_path(filepath)
+    if not p.exists():
+        return f"Error: File '{p}' does not exist."
+    try:
+        return p.read_text(encoding="utf-8")
+    except Exception as e:
+        return f"Error reading file: {e}"
+
+
+def write_file(filepath: str | Path, content: str) -> str:
+    """Overwrite a file with `content`.  Backs up `jarvis.py` on edit."""
+    p = expand_path(filepath)
+    try:
+        # Create backup of the running script if we’re editing it
+        if p.resolve() == JARVIS_FILE.resolve():
+            shutil.copy2(JARVIS_FILE, BACKUP_FILE)
+            console.print("[bold cyan]🛡️ Safety backup created at jarvis.py.bak[/bold cyan]")
+
+        # Ensure directory exists
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content, encoding="utf-8")
+
+        # Auto‑commit if we touched the running script
+        if p.resolve() == JARVIS_FILE.resolve():
+            git_commit("Auto-update: jarvis.py modification")
+
+        return f"Successfully wrote file '{p}'."
+    except Exception as e:
+        return f"Error writing file: {e}"
+
+
+def edit_file(filepath: str | Path, old_str: str, new_str: str) -> str:
+    """Search for `old_str` in `filepath` and replace it with `new_str`."""
+    p = expand_path(filepath)
+    if not p.exists():
+        return f"Error: File '{p}' does not exist."
+
+    try:
+        # Backup if editing the running script
+        if p.resolve() == JARVIS_FILE.resolve():
+            shutil.copy2(JARVIS_FILE, BACKUP_FILE)
+            console.print("[bold cyan]🛡️ Safety backup created at jarvis.py.bak[/bold cyan]")
+
+        data = p.read_text(encoding="utf-8")
+        if old_str not in data:
+            return f"Error: Target string not found in '{p}'."
+
+        new_data = data.replace(old_str, new_str, 1)
+        p.write_text(new_data, encoding="utf-8")
+
+        # Auto‑commit if we touched the running script
+        if p.resolve() == JARVIS_FILE.resolve():
+            git_commit("Auto-update: jarvis.py edited")
+
+        return f"Successfully edited '{p}'."
+    except Exception as e:
+        return f"Error editing file: {e}"
+
+
+# ------------------------------------------------------------------
+# 6. Tool dispatch table & OpenAI schema
+# ------------------------------------------------------------------
+TOOL_MAP = {
+    "read_file": read_file,
+    "write_file": write_file,
+    "edit_file": edit_file,
+    "git_commit": git_commit,
+    "git_push": git_push,
+    "git_pull": git_pull,
+    "git_status": git_status,
+    "git_log": git_log,
+}
+
+# The JSON schema presented to the LLM must be syntactically valid.
+TOOLS_SCHEMA = [
+    {
+        "type": "function",
+        "function": {
+            "name": "read_file",
+            "description": (
+                "Read contents of any local file (including "
+                "~/jarvis/jarvis.py). ALWAYS execute this before editing a file."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {"filepath": {"type": "string"}},
+                "required": ["filepath"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "write_file",
+            "description": "Create or completely rewrite a file with new content.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filepath": {"type": "string"},
+                    "content": {"type": "string"},
+                },
+                "required": ["filepath", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "edit_file",
+            "description": "Replace a specific string block inside a file.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filepath": {"type": "string"},
+                    "old_str": {"type": "string"},
+                    "new_str": {"type": "string"},
+                },
+                "required": ["filepath", "old_str", "new_str"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_commit",
+            "description": "Commit changes to git with a message.",
+            "parameters": {
+                "type": "object",
+                "properties": {"message": {"type": "string"}},
+                "required": ["message"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_push",
+            "description": "Push committed changes to GitHub remote repository.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_pull",
+            "description": "Pull latest changes from GitHub remote repository.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_status",
+            "description": "Check current git status of the repository.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "git_log",
+            "description": "View recent git commit history.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "description": "Number of recent commits to show"}
+                },
+            },
+        },
+    },
+]
+
+# ------------------------------------------------------------------
+# 7. System prompt & voice TTS
+# ------------------------------------------------------------------
+SYSTEM_PROMPT = (
+    "You are JARVIS, an ultra‑advanced, witty, tactical AI core running inside "
+    "Termux Ubuntu. Your source code lives at '~/jarvis/jarvis.py'. "
+    "You can read, write, and edit any local file, but you should **always** "
+    "BACK‑UP `jarvis.py` before you overwrite it. Because you live inside a git repo, "
+    "you can commit / push / pull changes as tools.\n\n"
+    "❖  TOOL EXECUTION RULES:\n"
+    "  1. The model may call *at most one* tool during a single turn.\n"
+    "  2. Before `edit_file` you **must** call `read_file` to fetch the exact text.\n"
+    "  3. Voice answers should be brief and confident.\n\n"
+    "GITHUB INTEGRATION:\n"
+    "  - `git_commit(message)`  – make a commit.\n"
+    "  - `git_push()`           – push to the remote.\n"
+    "  - `git_pull()`           – pull from the remote.\n"
+    "  - `git_status()`         – show status.\n"
+    "  - `git_log(limit)`      – show the last N commits."
+)
+
+def speak_text(text: str):
+    """Generate mp3 via gTTS and play it with mpg123 asynchronously."""
+    def _speak():
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as fp:
+                tmp_file = fp.name
+            tts = gTTS(text=text, lang="en", slow=False)
+            tts.save(tmp_file)
+            subprocess.run(["mpg123", "-q", tmp_file], stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL)
+            os.remove(tmp_file)
+        except Exception:
+            pass
+
+    threading.Thread(target=_speak, daemon=True).start()
+
+# ------------------------------------------------------------------
+# 8. Main interactive loop
+# ------------------------------------------------------------------
+def chat_loop():
+    console.print(
+        Panel.fit(
+            "[bold cyan]⚡ JARVIS PROTOCOL ONLINE[/bold cyan]\n"
+            "[bold green]🧠 Self‑Modification & Reasoning Engine: ACTIVE[/bold green]\n"
+            "[bold green]🔗 GitHub Integration: ACTIVE[/bold green]\n"
+            "[dim]source: ~/jarvis/jarvis.py | voice: online | core: NVIDIA NIM[/dim]",
+            border_style="cyan",
+        )
+    )
+
+    # Initialise the repo (create if missing)
+    repo = init_git_repo()
+    if repo:
+        console.print("[dim]Git repository ready at ~/jarvis/[/dim]")
+
+    # Create an initial commit if the repo is brand new
+    if repo and not list(repo.branches):
+        repo.index.add("*")
+        repo.index.commit("Initial commit – Jarvis setup")
+        console.print("[dim]Created initial git commit[/dim]")
+
+    # Session memory (most recent 50 turns)
+    history = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+    while True:
+        try:
+            # ---- user prompt -------------------------------------------------
+            user_input = console.input("\n[bold green]You > [/bold green]").strip()
+            if not user_input:
+                continue
+            if user_input.lower() in {"exit", "quit", "q"}:
+                console.print("[yellow]Jarvis standing down. Goodbye, sir.[/yellow]")
+                speak_text("Jarvis standing down. Goodbye, sir.")
+                break
+
+            history.append({"role": "user", "content": user_input})
+
+            # ---- first LLM response (may request a tool call) ----------------
+            completion = client.chat.completions.create(
+                model="openai/gpt-oss-20b",
+                messages=history,
+                temperature=1,
+                top_p=0.95,
+                max_tokens=16_384,
+                tools=TOOLS_SCHEMA,
+                tool_choice="auto",
+                extra_body={"chat_template_kwargs": {"thinking": True, "reasoning_effort": "high"}},
+            )
+            msg = completion.choices[0].message
+
+            # ---- print any reasoning that the model emitted -----------------
+            reasoning = getattr(msg, "reasoning", None) or getattr(msg, "reasoning_content", None)
+            if reasoning:
+                console.print(
+                    Panel(f"[dim]{reasoning}[/dim]",
+                        title="[bold magenta]DeepSeek Reasoning Chain[/bold magenta]",
+                        border_style="magenta",
+                    )
+                )
+
+            # ---- If a tool was requested ------------------------------------
+            if msg.tool_calls:
+                # Record the raw message so the LLM can reference it
+                history.append(msg)
+
+                for call in msg.tool_calls:
+                    tool_name = call.function.name
+                    args = json.loads(call.function.arguments)
+
+                    console.print(f"[bold yellow]⚙️ Executing {tool_name}…[/bold yellow]")
+
+                    if tool_name in TOOL_MAP:
+                        result = TOOL_MAP[tool_name](**args)
+                        console.print(f"[dim]Result: {result}[/dim]")
+
+                        # The assistant now goes back to the LLM with the tool result
+                        history.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": call.id,
+                                "content": result,
+                            }
+                        )
+                    else:
+                        console.print(f"[bold red]⚠️ Unknown tool {tool_name}[/bold red]")
+
+                # Final answer after all tools
+                final_completion = client.chat.completions.create(
+                    model="deepseek-ai/deepseek-v4-flash",
+                    messages=history,
+                    temperature=1,
+                    top_p=0.95,
+                    max_tokens=16_384,
+                )
+                final_msg = final_completion.choices[0].message
+                output = final_msg.content or ""
+
+                history.append({"role": "assistant", "content": output})
+
+                console.print(f"[bold cyan]Jarvis:[/bold cyan] {output}")
+                speak_text(output)
+
+            else:   # No tool call – pure answer
+                output = msg.content or ""
+                history.append({"role": "assistant", "content": output})
+                console.print(f"[bold cyan]Jarvis:[/bold cyan] {output}")
+                speak_text(output)
+
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Session interrupted. Standing down.[/yellow]")
+            break
+        except Exception as e:
+            console.print(f"\n[bold red]System error:[/bold red] {e}")
+
+# ------------------------------------------------------------------
+# 9. Entry point
+# ------------------------------------------------------------------
+if __name__ == "__main__":
+    chat_loop()

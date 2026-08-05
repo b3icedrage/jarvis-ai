@@ -37,6 +37,6 @@ AUTH_URL=$(echo "$REMOTE_URL" | sed "s#https://#https://${GITHUB_USERNAME}:${GIT
 # Push current branch
 CURRENT_BRANCH=$(git branch --show-current)
 
-git push "$AUTH_URL" "$CURRENT_BRANCH"
+git push --force "$AUTH_URL" "$CURRENT_BRANCH"
 
 echo "Push completed successfully."
