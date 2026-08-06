@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JARVIS Demo Site</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    h1 {
+      color: #333;
+    }
+    #message {
+      margin-top: 20px;
+      font-size: 1.2em;
+      color: #555;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Welcome to JARVIS Demo Site</h1>
+  <div id="message">Press the button to interact with JARVIS.</div>
+  <button id="talkBtn">Talk to JARVIS</button>
+  <script>
+    const btn = document.getElementById('talkBtn');
+    const msg = document.getElementById('message');
+    btn.addEventListener('click', async () => {
+      msg.textContent = 'Thinking...';
+      try {
+        const res = await fetch('/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: 'Hello JARVIS' })
+        });
+        const data = await res.json();
+        msg.textContent = data.response;
+      } catch (e) {
+        msg.textContent = 'Error communicating with server.';
+      }
+    });
+  </script>
+</body>
+</html>
