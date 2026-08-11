@@ -166,6 +166,15 @@
     .url-ok { color: var(--green); font-weight: 600; }
     .url-bad { color: var(--red); font-weight: 600; }
     .url-unknown { color: var(--muted); }
+    .btn-green { background: var(--green); color: #fff; }
+    .btn-green:hover { filter: brightness(1.06); }
+    .amount { font-size: 1.6rem; font-weight: 800; margin: 4px 0 8px; }
+    .pay-result { display: none; margin-top: 14px; border-radius: 10px; padding: 12px 14px; font-size: 0.92rem; }
+    .pay-result.show { display: block; animation: fadeIn 0.3s ease; }
+    .pay-result.ok { background: var(--green-bg); border: 1px solid #b7e3c6; color: var(--green); }
+    .pay-result.err { background: #fef2f2; border: 1px solid #fecaca; color: #7f1d1d; }
+    .pay-list { margin: 16px 0 0; padding: 0; list-style: none; font-size: 0.88rem; color: var(--muted); }
+    .pay-list li { padding: 6px 0; border-bottom: 1px dashed var(--border); }
 
     footer {
       text-align: center;
@@ -262,6 +271,30 @@
         </table>
       </div>
       <p class="empty" id="emptyLabel"></p>
+    </div>
+
+    <!-- ============ M-PESA PAYMENT ============ -->
+    <div class="card" id="payCard">
+      <h2>Pay a school fee with M-Pesa</h2>
+      <p class="sub">This is a <strong>real M-Pesa STK push</strong> sent by Safaricom to the phone number you enter. The money goes to the registered M-Pesa paybill for this fee — you will receive an official confirmation from Safaricom on your phone.</p>
+
+      <div class="field">
+        <label for="payPhone">M-Pesa phone number</label>
+        <input id="payPhone" type="tel" inputmode="tel" autocomplete="off" placeholder="e.g. 0712345678" />
+        <div class="hint">Any valid Kenyan Safaricom number works — e.g. 0712345678 or +254712345678.</div>
+      </div>
+
+      <div class="field" style="margin-bottom: 8px">
+        <label>Fee</label>
+        <div class="amount" id="feeAmount">KSh 1600</div>
+        <div class="hint" id="feePurpose">School fee payment</div>
+      </div>
+
+      <button class="btn btn-green" id="payBtn">Pay with M-Pesa</button>
+
+      <div class="pay-result" id="payResult" role="status" aria-live="polite"></div>
+
+      <ul class="pay-list" id="payList"></ul>
     </div>
 
     <footer>
@@ -469,7 +502,76 @@
       }
     });
 
+    // ---------- M-Pesa payment (real Daraja STK push) ----------
+    const FEE_AMOUNT = 1600;
+    const FEE_PURPOSE = "School fee payment";
+    const FEE_ACCOUNT_REF = "FEE";
+    const PAYMENTS_KEY = "mpesaPayments";
+
+    function normalizeKenyanPhone(raw) {
+      let p = String(raw || "").replace(/[\s\-()]/g, "");
+      if (p.startsWith("+")) p = p.slice(1);
+      if (/^254\d{9}$/.test(p)) return p;
+      if (/^0\d{9}$/.test(p)) return "254" + p.slice(1);
+      return null;
+    }
+
+    function loadPayments() {
+      try { return JSON.parse(localStorage.getItem(PAYMENTS_KEY)) || []; } catch { return []; }
+    }
+    function savePayments(list) { localStorage.setItem(PAYMENTS_KEY, JSON.stringify(list)); }
+
+    function renderPayments() {
+      const list = loadPayments();
+      $("payList").innerHTML = "";
+      if (!list.length) return;
+      list.slice().sort((a, b) => b.at - a.at).slice(0, 10).forEach((p) => {
+        const li = document.createElement("li");
+        li.textContent = new Date(p.at).toLocaleString() + " — KSh " + p.amount + " to " + p.phone + " — " + p.status;
+        $("payList").appendChild(li);
+      });
+    }
+
+    function showPayResult(kind, text) {
+      const el = $("payResult");
+      el.className = "pay-result show" + (kind ? " " + kind : "");
+      el.textContent = text;
+    }
+
+    $("feeAmount").textContent = "KSh " + FEE_AMOUNT;
+    $("feePurpose").textContent = FEE_PURPOSE + " — payable to the registered M-Pesa paybill.";
+
+    $("payBtn").addEventListener("click", async () => {
+      const phone = normalizeKenyanPhone($("payPhone").value);
+      const btn = $("payBtn");
+      if (!phone) {
+        showPayResult("err", "Enter a valid Kenyan phone number (e.g. 0712345678).");
+        return;
+      }
+      btn.disabled = true;
+      showPayResult("", "Sending M-Pesa STK push…");
+      try {
+        const res = await fetch("/api/mpesa/stk-push", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ phone, amount: FEE_AMOUNT, accountRef: FEE_ACCOUNT_REF, description: FEE_PURPOSE })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showPayResult("ok", "✓ STK push sent to " + $("payPhone").value.trim() + " — open your phone and enter your PIN to complete the payment. Reference: " + data.checkoutRequestId);
+          savePayments(loadPayments().concat({ at: Date.now(), phone, amount: FEE_AMOUNT, status: "push sent" }));
+          renderPayments();
+        } else {
+          showPayResult("err", "✗ " + (data.error || "Payment request failed.") + (res.status === 503 ? " Add the MPESA_* keys in the project's API Keys tab to enable payments." : ""));
+        }
+      } catch {
+        showPayResult("err", "✗ Could not reach the payment service. Try again in a moment.");
+      }
+      btn.disabled = false;
+    });
+
     render();
+    renderPayments();
   </script>
 </body>
 </html>

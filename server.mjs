@@ -1,12 +1,14 @@
 /**
  * Local preview server.
- * Serves the static site and the /api/check-url endpoint (reusing the
- * exact handler that Vercel deploys), so the preview behaves like prod.
+ * Serves the static site and the API endpoints (reusing the exact
+ * handlers Vercel deploys) so the preview behaves like production.
  */
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import checkUrl from "./api/check-url.js";
+import stkPush from "./api/mpesa/stk-push.js";
+import mpesaCallback from "./api/mpesa/callback.js";
 
 const PORT = Number(process.env.PORT || 5000);
 const ROOT = process.cwd();
@@ -23,21 +25,31 @@ const MIME = {
   ".txt": "text/plain; charset=utf-8",
 };
 
+const API_ROUTES = {
+  "/api/check-url": checkUrl,
+  "/api/mpesa/stk-push": stkPush,
+  "/api/mpesa/callback": mpesaCallback,
+};
+
+async function readBody(req) {
+  let body = "";
+  for await (const chunk of req) body += chunk;
+  return body;
+}
+
 const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url, "http://localhost");
 
-    // Reuse the Vercel function handler for the URL check.
-    if (url.pathname === "/api/check-url" && req.method === "POST") {
-      let body = "";
-      for await (const chunk of req) body += chunk;
-      const request = new Request("http://localhost/api/check-url", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body,
+    const handler = API_ROUTES[url.pathname];
+    if (handler) {
+      const request = new Request("http://localhost" + url.pathname, {
+        method: req.method,
+        headers: req.headers,
+        body: ["GET", "HEAD"].includes(req.method) ? undefined : await readBody(req),
       });
-      const response = await checkUrl(request);
-      res.writeHead(response.status, { "content-type": "application/json" });
+      const response = await handler(request);
+      res.writeHead(response.status, { "content-type": response.headers.get("content-type") || "application/json" });
       res.end(await response.text());
       return;
     }
