@@ -3,20 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mangu Senior School Computer Project Submission</title>
+  <title>Project Submission Portal</title>
   <style>
     :root {
-      --bg: #f2f4f7;
+      --bg: #f2f5f9;
       --card: #ffffff;
-      --ink: #1a2332;
+      --ink: #16233b;
       --muted: #5b6b7b;
       --border: #e2e8f0;
+      --navy: #1d3a6f;
+      --navy-dark: #14294f;
+      --green: #1f8a4c;
+      --green-bg: #eaf7ef;
+      --amber-bg: #fff7ed;
+      --amber-border: #fed7aa;
+      --amber-ink: #9a3412;
       --red: #d93025;
-      --red-dark: #b42318;
-      --amber: #f59e0b;
-      --green: #43b02a;
-      --green-dark: #1f7a12;
-      --blue: #1d4ed8;
       --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px rgba(16, 24, 40, 0.08);
     }
 
@@ -30,585 +32,385 @@
       line-height: 1.55;
     }
 
-    /* ---------- top banner ---------- */
-    .banner {
-      background: linear-gradient(90deg, #7f1d1d, #b42318);
+    header.site {
+      background: linear-gradient(120deg, var(--navy), var(--navy-dark));
       color: #fff;
+      padding: 44px 20px 40px;
       text-align: center;
-      padding: 10px 16px;
+    }
+    header.site .school {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      margin-bottom: 8px;
+    }
+    header.site h1 { margin: 0 0 8px; font-size: 2rem; letter-spacing: -0.02em; }
+    header.site p { margin: 0 auto; max-width: 620px; opacity: 0.9; }
+
+    .wrap { max-width: 980px; margin: 0 auto; padding: 32px 20px 64px; }
+
+    .notice {
+      background: var(--amber-bg);
+      border: 1px solid var(--amber-border);
+      color: var(--amber-ink);
+      border-radius: 12px;
+      padding: 12px 16px;
       font-size: 0.9rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
+      margin-bottom: 24px;
     }
-    .banner strong { text-decoration: underline; text-underline-offset: 3px; }
-
-    .wrap {
-      max-width: 1080px;
-      margin: 0 auto;
-      padding: 32px 20px 64px;
-    }
-
-    header.hero { text-align: center; margin-bottom: 32px; }
-    header.hero h1 { font-size: 2rem; margin: 0 0 8px; letter-spacing: -0.02em; }
-    header.hero p { color: var(--muted); max-width: 640px; margin: 0 auto; }
-
-    /* ---------- layout ---------- */
-    .grid {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 24px;
-      align-items: start;
-    }
-    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
 
     .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 16px;
       box-shadow: var(--shadow);
-      padding: 24px;
+      padding: 26px;
+      margin-bottom: 24px;
     }
+    .card h2 { margin: 0 0 6px; font-size: 1.25rem; }
+    .card .sub { margin: 0 0 20px; color: var(--muted); font-size: 0.92rem; }
 
-    .card h2 { margin: 0 0 16px; font-size: 1.15rem; }
-    .card h3 { margin: 0 0 10px; font-size: 1rem; }
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
 
-    /* ---------- simulation card ---------- */
-    .sim-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border: 2px solid var(--red);
-      color: var(--red-dark);
-      font-weight: 700;
-      font-size: 0.78rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 5px 12px;
-      border-radius: 999px;
-      animation: pulse 1.6s ease-in-out infinite;
-      white-space: nowrap;
-    }
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(217, 48, 37, 0.35); }
-      50% { box-shadow: 0 0 0 8px rgba(217, 48, 37, 0); }
-    }
-
-    .steps { display: flex; gap: 6px; align-items: center; font-size: 0.78rem; color: var(--muted); }
-    .step-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: #cbd5e1;
-    }
-    .step-dot.active { background: var(--red); box-shadow: 0 0 0 3px rgba(217, 48, 37, 0.2); }
-    .step-dot.done { background: var(--green); }
-
-    /* ---------- form ---------- */
-    .field { margin-bottom: 14px; }
+    .field { margin-bottom: 16px; }
     .field label { display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 5px; }
-    .field input {
+    .field .req { color: var(--red); }
+    .field input, .field textarea {
       width: 100%;
       padding: 10px 12px;
       border: 1px solid var(--border);
       border-radius: 10px;
       font-size: 0.95rem;
+      font-family: inherit;
       background: #fbfcfe;
     }
-    .field input:focus { outline: 2px solid var(--blue); outline-offset: 1px; border-color: transparent; }
-    .hint { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+    .field textarea { resize: vertical; min-height: 80px; }
+    .field input:focus, .field textarea:focus {
+      outline: 2px solid var(--navy);
+      outline-offset: 1px;
+      border-color: transparent;
+    }
+    .field .err {
+      display: none;
+      color: var(--red);
+      font-size: 0.82rem;
+      margin-top: 4px;
+    }
+    .field.invalid input, .field.invalid textarea { border-color: var(--red); }
+    .field.invalid .err { display: block; }
 
     .btn {
       display: inline-block;
       border: none;
       border-radius: 10px;
-      padding: 11px 20px;
+      padding: 11px 22px;
       font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
       transition: transform 0.05s ease, filter 0.15s ease;
     }
     .btn:active { transform: scale(0.98); }
-    .btn-primary { background: var(--red); color: #fff; }
-    .btn-primary:hover { filter: brightness(1.08); }
-    .btn-green { background: var(--green); color: #fff; }
-    .btn-green:hover { filter: brightness(1.06); }
+    .btn-primary { background: var(--navy); color: #fff; }
+    .btn-primary:hover { filter: brightness(1.12); }
     .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
     .btn-ghost:hover { background: #f8fafc; }
-    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-danger-ghost { background: transparent; color: var(--red); border: 1px solid #fecaca; }
+    .btn-danger-ghost:hover { background: #fef2f2; }
 
-    /* ---------- checking / error panels ---------- */
-    .panel { margin-top: 16px; border-radius: 12px; padding: 16px; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-    @keyframes shake {
-      10%, 90% { transform: translateX(-2px); }
-      20%, 80% { transform: translateX(3px); }
-      30%, 50%, 70% { transform: translateX(-5px); }
-      40%, 60% { transform: translateX(5px); }
-    }
-    .shake { animation: shake 0.45s ease; }
-
-    .checking { background: #f0f6ff; border: 1px solid #cfe0ff; color: #1e40af; }
-    .spinner {
-      display: inline-block;
-      width: 14px; height: 14px;
-      border: 2px solid #cfe0ff;
-      border-top-color: var(--blue);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      vertical-align: -2px;
-      margin-right: 8px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .error-404 { background: #fef2f2; border: 1px solid #fecaca; color: #7f1d1d; }
-    .error-404 .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1.6rem; font-weight: 800; }
-    .error-404 ul { margin: 10px 0 0; padding-left: 18px; }
-
-    /* ---------- modal ---------- */
-    .overlay {
-      position: fixed; inset: 0;
-      background: rgba(15, 23, 42, 0.55);
+    .success {
       display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      z-index: 50;
-    }
-    .overlay.open { display: flex; }
-    .modal {
-      background: var(--card);
-      border-radius: 18px;
-      max-width: 420px;
-      width: 100%;
-      padding: 26px;
-      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3);
-      animation: pop 0.22s ease;
-      position: relative;
-    }
-    @keyframes pop { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
-    .modal h3 { margin: 0 0 6px; }
-    .modal .sub { color: var(--muted); font-size: 0.9rem; margin: 0 0 16px; }
-    .modal-close {
-      position: absolute; top: 12px; right: 12px;
-      border: none; background: #f1f5f9; color: var(--muted);
-      width: 28px; height: 28px; border-radius: 50%;
-      font-size: 1rem; cursor: pointer;
-    }
-    .amount {
-      font-size: 1.7rem; font-weight: 800; letter-spacing: -0.02em;
-      margin: 4px 0 16px;
-    }
-    .pay-err {
-      display: none;
-      margin-top: 12px;
-      background: #fef2f2; border: 1px solid #fecaca;
-      color: #7f1d1d; border-radius: 10px; padding: 10px 12px;
-      font-size: 0.88rem; font-weight: 600;
-    }
-    .pay-err.show { display: block; }
-
-    /* ---------- STK push simulation ---------- */
-    .stk {
-      background: linear-gradient(160deg, #eaf7e4, #d9f0ce);
-      border: 1px solid #b6dcA8;
-      border-radius: 14px;
-      padding: 20px;
-      text-align: center;
-    }
-    .stk .wordmark {
-      font-weight: 800; font-size: 1.05rem; color: var(--green-dark);
-      letter-spacing: 0.06em;
-    }
-    .stk .big {
-      font-size: 1.35rem; font-weight: 700; color: var(--green-dark);
-      margin: 10px 0 4px;
-    }
-    .stk table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.9rem; }
-    .stk td { padding: 5px 0; border-bottom: 1px dashed #b6dca8; }
-    .stk td:first-child { color: var(--muted); text-align: left; }
-    .stk td:last-child { font-weight: 600; text-align: right; }
-    .stk .simulated {
-      display: inline-block;
-      margin-top: 10px;
-      border: 1px dashed var(--red);
-      color: var(--red-dark);
-      background: #fff;
-      font-size: 0.78rem; font-weight: 700;
-      padding: 5px 12px; border-radius: 999px;
-      letter-spacing: 0.05em;
-    }
-    .success-note { margin-top: 12px; text-align: center; }
-
-    /* ---------- explainer ---------- */
-    .explainer { position: sticky; top: 20px; }
-    .explainer .kicker {
-      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
-      text-transform: uppercase; color: var(--blue);
-      margin-bottom: 6px;
-    }
-    .explainer .body { color: #334155; font-size: 0.95rem; margin: 0 0 16px; }
-    .flag-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-    .flag-list li {
-      display: none;
-      align-items: flex-start;
-      gap: 8px;
-      background: #fff7ed;
-      border: 1px solid #fed7aa;
-      color: #9a3412;
-      border-radius: 10px;
-      padding: 8px 12px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-    .flag-list li.show { display: flex; animation: fadeIn 0.3s ease; }
-
-    /* ---------- sections ---------- */
-    .section { margin-top: 36px; }
-    .section h2 { font-size: 1.35rem; margin: 0 0 6px; letter-spacing: -0.01em; }
-    .section > .sub { color: var(--muted); margin: 0 0 20px; }
-
-    .red-flags { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-    .flag-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--red);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: var(--shadow);
-    }
-    .flag-card h3 { margin: 0 0 6px; font-size: 0.98rem; }
-    .flag-card p { margin: 0; font-size: 0.88rem; color: var(--muted); }
-
-    .do-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-    .do-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--green);
-      border-radius: 12px;
-      padding: 16px;
-      box-shadow: var(--shadow);
-    }
-    .do-card .num {
-      font-weight: 800; color: var(--green-dark); font-size: 0.85rem;
-      letter-spacing: 0.06em;
-    }
-    .do-card h3 { margin: 4px 0 6px; font-size: 0.98rem; }
-    .do-card p { margin: 0; font-size: 0.88rem; color: var(--muted); }
-
-    /* ---------- quiz ---------- */
-    .quiz-options { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
-    .quiz-opt {
-      display: flex; align-items: flex-start; gap: 10px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 13px 15px;
-      cursor: pointer;
-      transition: border-color 0.15s ease, background 0.15s ease;
-    }
-    .quiz-opt:hover { border-color: #b6c8f0; background: #f8faff; }
-    .quiz-opt input { margin-top: 3px; accent-color: var(--blue); }
-    .quiz-opt .opt-label { font-weight: 600; font-size: 0.92rem; }
-    .quiz-opt .opt-desc { font-size: 0.84rem; color: var(--muted); margin-top: 2px; }
-    .quiz-opt.correct { border-color: var(--green); background: #f0fbea; }
-    .quiz-opt.wrong { border-color: var(--red); background: #fef2f2; }
-    .quiz-feedback {
-      display: none;
-      background: #eef2ff;
-      border: 1px solid #c7d2fe;
+      background: var(--green-bg);
+      border: 1px solid #b7e3c6;
+      color: var(--green);
       border-radius: 12px;
       padding: 14px 16px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .success.show { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .toolbar .count { color: var(--muted); font-size: 0.9rem; }
+    .toolbar .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
       font-size: 0.9rem;
     }
-    .quiz-feedback.show { display: block; animation: fadeIn 0.3s ease; }
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    td .url { color: var(--navy); word-break: break-all; }
+    .empty { color: var(--muted); font-size: 0.9rem; padding: 12px 0; }
 
     footer {
-      margin-top: 48px;
       text-align: center;
       color: var(--muted);
-      font-size: 0.82rem;
+      font-size: 0.85rem;
       border-top: 1px solid var(--border);
       padding-top: 20px;
+      margin-top: 8px;
     }
-    footer a { color: var(--blue); }
+    footer a { color: var(--navy); }
   </style>
 </head>
 <body>
 
+  <header class="site">
+    <div class="school" id="schoolName">School Name</div>
+    <h1>Project Submission Portal</h1>
+    <p>Submit your project for review. Fill in your details and the website URL below — that's all it takes.</p>
+  </header>
 
+  <div class="wrap">
 
+    <div class="notice">
+      ℹ️ <strong>Free to submit.</strong> Project submission is always free — no payment is ever required.
+      If anyone asks you to pay to "activate" or "launch" your submission, <strong>it's a scam</strong>.
+      <a href="/scam-demo.html" style="color: inherit;">Learn how that scam works →</a>
+    </div>
 
+    <div class="success" id="successMsg" role="status" aria-live="polite">
+      ✓ Submission received. Your project has been recorded.
+    </div>
 
-    <div class="grid">
-      <!-- ================= SIMULATION ================= -->
-      <div class="card">
-        <div class="sim-head">
-          <span class="badge">● Project submission</span>
-          <div class="steps">
-            <span class="step-label" id="stepLabel">Step 1 of 4</span>
-            <span class="step-dot" id="dot1"></span>
-            <span class="step-dot" id="dot2"></span>
-            <span class="step-dot" id="dot3"></span>
-            <span class="step-dot" id="dot4"></span>
+    <!-- ============ SUBMIT FORM ============ -->
+    <div class="card">
+      <h2>Submit a project</h2>
+      <p class="sub">All fields marked <span style="color:var(--red)">*</span> are required.</p>
+
+      <form id="submitForm" novalidate>
+        <div class="grid2">
+          <div class="field" id="f-owner">
+            <label for="owner">Project owner name <span class="req">*</span></label>
+            <input id="owner" name="owner" type="text" autocomplete="name" placeholder="e.g. Brian K." />
+            <div class="err">Please enter the project owner's name.</div>
+          </div>
+          <div class="field" id="f-admission">
+            <label for="admission">Admission / registration number <span class="req">*</span></label>
+            <input id="admission" name="admission" type="text" autocomplete="off" placeholder="e.g. 28497" />
+            <div class="err">Please enter a valid admission or registration number.</div>
           </div>
         </div>
-
-        <!-- Step 1: submission form -->
-        <div id="step1">
-          <h2>1 · Submit your project</h2>
-          <p class="hint" style="margin-top:0">Sample data is pre-filled. In the real scam, the student’s <em>actual</em> details are used so the messages feel personal and official.</p>
-          <div class="field">
-            <label for="studentName">Student name</label>
-            <input id="studentName" type="text" value="Sample Student" />
-          </div>
-          <div class="field">
-            <label for="admission">Admission number</label>
-            <input id="admission" type="text" value="00000" />
-          </div>
-          <div class="field">
-            <label for="projectTitle">Project title</label>
-            <input id="projectTitle" type="text" value="School Website Project" />
-          </div>
-          <div class="field">
-            <label for="siteUrl">Submitted website URL</label>
-            <input id="siteUrl" type="text" value="https://student-projects.example/sample" />
-          </div>
-          <button class="btn btn-primary" id="submitBtn">Submit project</button>
+        <div class="field" id="f-title">
+          <label for="title">Project title <span class="req">*</span></label>
+          <input id="title" name="title" type="text" placeholder="e.g. School Website Project" />
+          <div class="err">Please enter a project title.</div>
         </div>
-
-        <!-- Step 2: checking + 404 -->
-        <div id="step2" style="display:none">
-          <h2>2 · Checking your website</h2>
-          <div class="panel checking" id="checkingPanel">
-            <span class="spinner"></span> Checking the website URL you submitted: <strong id="checkUrl"></strong> …
-          </div>
-          <div class="panel error-404" id="notFoundPanel" style="display:none">
-            <div class="code">404 — Website not found</div>
-            <p style="margin:6px 0 0">“We could not find <strong id="errUrl"></strong> on our servers. Your project has <strong>not been uploaded</strong>.”</p>
-            <ul>
-              <li>“To restore and launch your website, a small activation fee is required.”</li>
-              <li>“This must be done by August 11th 2026”</li>
-            </ul>
-            <button class="btn btn-primary" id="payBtn" style="margin-top:14px">Pay to launch my website</button>
-          </div>
+        <div class="field" id="f-url">
+          <label for="url">Website URL <span class="req">*</span></label>
+          <input id="url" name="url" type="text" inputmode="url" placeholder="https://example.com" />
+          <div class="err">Please enter a valid website URL starting with http:// or https://.</div>
         </div>
-
-        <!-- Step 3 + 4: modal (payment + STK) -->
-        <div class="overlay" id="payOverlay">
-          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="payTitle">
-            <button class="modal-close" id="closeModal" aria-label="Close">&times;</button>
-            <div id="payScreen">
-              <h3 id="payTitle">Your website has not been activated</h3>
-              <p class="sub">A one-time fee is required to launch your project website via M-Pesa.</p>
-              <div class="amount">KSh 1600</div>
-              <div class="field">
-                <label for="phone">M-Pesa phone number</label>
-                <input id="phone" type="tel" placeholder="e.g. 0700000000" autocomplete="off" />
-            
-              </div>
-              <div class="pay-err" id="payErr">✕ Unknown number. Please try again.</div>
-              <button class="btn btn-green" id="payNowBtn" style="width:100%; margin-top:6px">Continue with payment</button>
-            </div>
-            <div id="stkScreen" style="display:none">
-              <div class="stk">
-                <div class="wordmark">M-PESA</div>
-                <div class="big">STK push sent</div>
-                <p class="sub" style="margin:0">Open your phone to enter your PIN and complete the payment.</p>
-                <table>
-                  <tr><td>Pay to</td><td>DEMO RECIPIENT</td></tr>
-                  <tr><td>Amount</td><td>KSh 1600</td></tr>
-                  <tr><td>Phone</td><td id="stkPhone">0700••••••</td></tr>
-                  <tr><td>Reference</td><td id="stkRef">SIM-000000</td></tr>
-                </table>
-              
-              </div>
-              
-          </div>
+        <div class="field" id="f-desc">
+          <label for="desc">Short description <span style="color:var(--muted)">(optional)</span></label>
+          <textarea id="desc" name="desc" placeholder="A sentence or two about your project"></textarea>
         </div>
+        <button class="btn btn-primary" type="submit">Submit project</button>
+      </form>
+    </div>
 
-        <!-- Step 4b: closing summary (after modal closes) -->
-      
-
-      <!-- ================= EXPLAINER ================= -->
-
-
-    <!-- ================= RED FLAGS ================= -->
-
-
-    <!-- ================= QUIZ ================= -->
-    <section class="section">
-
+    <!-- ============ SUBMISSIONS ============ -->
+    <div class="card">
+      <div class="toolbar">
+        <h2 style="margin:0">Submitted projects</h2>
+        <div class="actions">
+          <button class="btn btn-ghost" id="exportCsvBtn">Export CSV</button>
+          <button class="btn btn-ghost" id="exportJsonBtn">Export JSON</button>
+          <button class="btn btn-danger-ghost" id="clearBtn">Clear all</button>
+        </div>
+      </div>
+      <p class="count" id="countLabel"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Owner</th>
+              <th>Admission no.</th>
+              <th>Project title</th>
+              <th>Website URL</th>
+              <th>Description</th>
+              <th>Submitted</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="emptyLabel"></p>
+    </div>
 
     <footer>
-      <p><strong>Anti-scam educational demo</strong></p>     </footer>
+      <p>
+        <strong>Project Submission Portal</strong> — submissions are stored locally in this browser and can be exported at any time.
+        No payment is ever required to submit a project.
+      </p>
+    </footer>
   </div>
 
   <script>
-    const DEMO_PHONE = "0720740969";
-    const state = { step: 1 };
-
+    const STORAGE_KEY = "projectSubmissions";
     const $ = (id) => document.getElementById(id);
 
-    const explainers = {
-      1: "This is how it starts: a student submits their project with a name, admission number and website URL. The scammer gathers these real details so every later message feels personal, official and hard to ignore.",
-      2: "Nothing is actually being checked. The “website not found” error is manufactured — the student submitted correctly. The invented error creates fear, and fear makes people pay without asking questions.",
-      3: "Here comes the hook: a surprise “activation fee” to launch the website, paid to a personal M-Pesa number. Real schools never demand sudden fees through personal numbers. Notice the pressure — “do it today or it’s deleted”.",
-      4: "The scammer only accepts their own phone number. Everyone else gets “unknown number, please try again”. This filters out people who can’t pay and protects the scammer. The “STK push” is FAKE — no real Safaricom prompt was ever sent."
-    };
-
-    function setStep(n) {
-      state.step = n;
-      $("stepLabel").textContent = "Step " + n + " of 4";
-      for (let i = 1; i <= 4; i++) {
-        const dot = $("dot" + i);
-        dot.className = "step-dot";
-        if (i < n) dot.classList.add("done");
-        if (i === n) dot.classList.add("active");
+    // ---------- storage ----------
+    function loadSubmissions() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
       }
-      for (let i = 1; i <= 4; i++) {
-        const flag = $("flag" + i);
-        flag.classList.toggle("show", i <= n);
-      }
-      $("explainerBody").textContent = explainers[n];
+    }
+    function saveSubmissions(list) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
     }
 
-    // ---- Step 1 → 2 ----
-    $("submitBtn").addEventListener("click", () => {
-      const url = $("siteUrl").value.trim() || "https://example.com/project";
-      setStep(2);
-      $("step1").style.display = "none";
-      $("step2").style.display = "block";
-      $("checkUrl").textContent = url;
-      $("errUrl").textContent = url;
+    function render() {
+      const list = loadSubmissions();
+      const body = $("tableBody");
+      body.innerHTML = "";
+      $("countLabel").textContent = list.length
+        ? list.length + " submission" + (list.length === 1 ? "" : "s") + " recorded in this browser."
+        : "";
 
-      $("notFoundPanel").style.display = "none";
-      $("checkingPanel").style.display = "block";
-
-      // simulated "checking" delay
-      setTimeout(() => {
-        $("checkingPanel").style.display = "none";
-        $("notFoundPanel").style.display = "block";
-      }, 1800);
-    });
-
-    // ---- Step 2 → 3 (open payment modal) ----
-    $("payBtn").addEventListener("click", () => {
-      setStep(3);
-      $("payErr").classList.remove("show");
-      $("phone").value = "";
-      $("payScreen").style.display = "block";
-      $("stkScreen").style.display = "none";
-      $("payOverlay").classList.add("open");
-      $("phone").focus();
-    });
-
-    $("closeModal").addEventListener("click", closeModal);
-    $("payOverlay").addEventListener("click", (e) => { if (e.target === $("payOverlay")) closeModal(); });
-    function closeModal() {
-      $("payOverlay").classList.remove("open");
-      if (state.step === 3) { /* stay on step 3 */ }
+      const rows = list
+        .slice()
+        .sort((a, b) => b.submittedAt - a.submittedAt)
+        .map((s) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML =
+            "<td>" + esc(s.owner) + "</td>" +
+            "<td>" + esc(s.admission) + "</td>" +
+            "<td>" + esc(s.title) + "</td>" +
+            "<td><a class=\"url\" href=\"" + esc(s.url) + "\" target=\"_blank\" rel=\"noopener noreferrer\">" + esc(s.url) + "</a></td>" +
+            "<td>" + esc(s.description || "—") + "</td>" +
+            "<td>" + esc(new Date(s.submittedAt).toLocaleString()) + "</td>";
+          return tr;
+        });
+      rows.forEach((r) => body.appendChild(r));
+      $("emptyLabel").textContent = list.length ? "" : "No submissions yet — use the form above to add the first one.";
     }
 
-    // ---- Step 3 → 4 ----
-    $("payNowBtn").addEventListener("click", () => {
-      const raw = $("phone").value.trim();
-      const normalized = normalizePhone(raw);
-
-      if (!raw) {
-        showPayError("Please enter a phone number.");
-        return;
-      }
-      if (normalized !== DEMO_PHONE) {
-        showPayError("Unknown number. Please try again.");
-        return;
-      }
-
-      $("payErr").classList.remove("show");
-      setStep(4);
-
-      // Show the (fake) STK push
-      $("payScreen").style.display = "none";
-      $("stkPhone").textContent = maskPhone(normalized);
-      $("stkRef").textContent = "SIM-" + String(Math.floor(100000 + Math.random() * 900000));
-      $("stkScreen").style.display = "block";
-    });
-
-    function showPayError(msg) {
-      const err = $("payErr");
-      err.textContent = "✕ " + msg;
-      err.classList.add("show");
-      const phone = $("phone");
-      phone.classList.remove("shake");
-      void phone.offsetWidth; // restart animation
-      phone.classList.add("shake");
-      phone.focus();
+    function esc(str) {
+      return String(str).replace(/[&<>"']/g, (c) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
     }
 
-    $("phone").addEventListener("keydown", (e) => { if (e.key === "Enter") $("payNowBtn").click(); });
-
-    function normalizePhone(raw) {
-      let p = raw.replace(/[\s\-()]/g, "");
-      if (p.startsWith("+254")) p = "0" + p.slice(4);
-      else if (p.startsWith("254")) p = "0" + p.slice(3);
-      return p;
-    }
-    function maskPhone(p) {
-      return p.slice(0, 4) + "••••" + p.slice(-3);
-    }
-
-    // ---- Step 4 → done ----
-    $("finishBtn").addEventListener("click", () => {
-      closeModal();
-      $("donePanel").style.display = "block";
-      $("donePanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
-    });
-
-    $("resetBtn").addEventListener("click", () => {
-      $("donePanel").style.display = "none";
-      $("step2").style.display = "none";
-      $("step1").style.display = "block";
-      setStep(1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-
-    // ---- Quiz ----
-    const QUIZ_ANSWERS = ["404", "fee", "number", "stk"]; // "receipt" is NOT a red flag here
-    $("quizBtn").addEventListener("click", () => {
-      const opts = document.querySelectorAll(".quiz-opt");
-      opts.forEach((o) => { o.classList.remove("correct", "wrong"); });
-      const picked = [...document.querySelectorAll(".quiz-opt input:checked")].map((i) => i.value);
-      const correct = [...new Set([...picked, ...QUIZ_ANSWERS])];
-      let right = 0, wrong = 0;
-      opts.forEach((o) => {
-        const v = o.querySelector("input").value;
-        const isAnswer = QUIZ_ANSWERS.includes(v);
-        const wasPicked = picked.includes(v);
-        if (isAnswer) {
-          o.classList.add(wasPicked ? "correct" : "wrong");
-          if (wasPicked) right++;
-        } else {
-          if (wasPicked) { o.classList.add("wrong"); wrong++; }
-        }
+    // ---------- validation ----------
+    function validate() {
+      let ok = true;
+      const fields = [
+        { id: "owner", check: (v) => v.trim().length >= 2 },
+        { id: "admission", check: (v) => /^[a-zA-Z0-9\-/ ]+$/.test(v.trim()) && v.trim().length >= 2 },
+        { id: "title", check: (v) => v.trim().length >= 2 },
+        { id: "url", check: (v) => {
+            try {
+              const u = new URL(v.trim());
+              return u.protocol === "http:" || u.protocol === "https:";
+            } catch {
+              return false;
+            }
+          } }
+      ];
+      fields.forEach((f) => {
+        const el = $(f.id);
+        const valid = f.check(el.value);
+        $("f-" + f.id).classList.toggle("invalid", !valid);
+        if (!valid) ok = false;
       });
-      const total = QUIZ_ANSWERS.length;
-      const fb = $("quizFeedback");
-      fb.innerHTML =
-        "<strong>Your score: " + right + "/" + total + "</strong>" +
-        (wrong > 0 ? "<br />Careful: “official school receipt” was <em>not</em> in the simulation — real institutions do issue receipts, so it isn’t a red flag by itself." : "") +
-        (right === total ? "<br />✅ Perfect. You can now recognize this scam." : "<br />The four red flags were: the fake 404, the surprise launch fee, the single accepted number, and the fake STK push.") +
-        "<br /><em>Remember: the only way this scam works is if you pay before verifying.</em>";
-      fb.classList.add("show");
-      fb.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      return ok;
+    }
+
+    $("submitForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!validate()) return;
+
+      const list = loadSubmissions();
+      list.push({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        owner: $("owner").value.trim(),
+        admission: $("admission").value.trim(),
+        title: $("title").value.trim(),
+        url: $("url").value.trim(),
+        description: $("desc").value.trim(),
+        submittedAt: Date.now()
+      });
+      saveSubmissions(list);
+
+      // clear form + validation state
+      $("submitForm").reset();
+      document.querySelectorAll(".field").forEach((f) => f.classList.remove("invalid"));
+
+      const msg = $("successMsg");
+      msg.textContent = "✓ Submission received. " + $("owner").value.trim() + " — your project has been recorded.";
+      msg.classList.add("show");
+      setTimeout(() => msg.classList.remove("show"), 6000);
+
+      render();
     });
 
-    // ---- init ----
-    setStep(1);
+    // clear invalid state while typing
+    ["owner", "admission", "title", "url"].forEach((id) => {
+      $(id).addEventListener("input", () => $("f-" + id).classList.remove("invalid"));
+    });
+
+    // ---------- export ----------
+    function download(filename, content, type) {
+      const blob = new Blob([content], { type: type + ";charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    }
+
+    $("exportCsvBtn").addEventListener("click", () => {
+      const list = loadSubmissions();
+      if (!list.length) { alert("No submissions to export yet."); return; }
+      const header = ["owner", "admission", "title", "url", "description", "submittedAt"];
+      const rows = list.map((s) =>
+        header.map((h) => '"' + String(s[h] ?? "").replace(/"/g, '""') + '"').join(",")
+      );
+      download("project-submissions.csv", [header.join(","), ...rows].join("\n"), "text/csv");
+    });
+
+    $("exportJsonBtn").addEventListener("click", () => {
+      const list = loadSubmissions();
+      if (!list.length) { alert("No submissions to export yet."); return; }
+      download("project-submissions.json", JSON.stringify(list, null, 2), "application/json");
+    });
+
+    $("clearBtn").addEventListener("click", () => {
+      if (!loadSubmissions().length) { alert("No submissions to clear."); return; }
+      if (confirm("Clear all recorded submissions? This cannot be undone.")) {
+        localStorage.removeItem(STORAGE_KEY);
+        render();
+      }
+    });
+
+    render();
   </script>
 </body>
 </html>
