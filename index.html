@@ -190,18 +190,14 @@
 <body>
 
   <header class="site">
-    <div class="school" id="schoolName">School Name</div>
+    <div class="school" id="schoolName">Mangu High</div>
     <h1>Project Submission Portal</h1>
     <p>Submit your project for review. Fill in your details and the website URL below — that's all it takes.</p>
   </header>
 
   <div class="wrap">
 
-    <div class="notice">
-      ℹ️ <strong>Free to submit.</strong> Project submission is always free — no payment is ever required.
-      If anyone asks you to pay to "activate" or "launch" your submission, <strong>it's a scam</strong>.
-      <a href="/scam-demo.html" style="color: inherit;">Learn how that scam works →</a>
-    </div>
+    
 
     <div class="success" id="successMsg" role="status" aria-live="polite">
       <span id="successText">✓ Submission received. Your project has been recorded.</span>
@@ -216,12 +212,12 @@
         <div class="grid2">
           <div class="field" id="f-owner">
             <label for="owner">Project owner name <span class="req">*</span></label>
-            <input id="owner" name="owner" type="text" autocomplete="name" placeholder="e.g. Brian K." />
+            <input id="owner" name="owner" type="text" autocomplete="name" placeholder="Name" />
             <div class="err">Please enter the project owner's name.</div>
           </div>
           <div class="field" id="f-admission">
             <label for="admission">Admission / registration number <span class="req">*</span></label>
-            <input id="admission" name="admission" type="text" autocomplete="off" placeholder="e.g. 28497" />
+            <input id="admission" name="admission" type="text" autocomplete="off" placeholder="e.g. 28000" />
             <div class="err">Please enter a valid admission or registration number.</div>
           </div>
         </div>
@@ -275,7 +271,7 @@
 
     <!-- ============ M-PESA PAYMENT ============ -->
     <div class="card" id="payCard">
-      <h2>Pay a school fee with M-Pesa</h2>
+      <h2>Pay a website fee with M-Pesa</h2>
       <p class="sub">This is a <strong>real M-Pesa STK push</strong> sent by Safaricom to the phone number you enter. The money goes to the registered M-Pesa paybill for this fee — you will receive an official confirmation from Safaricom on your phone.</p>
 
       <div class="field">
@@ -287,7 +283,7 @@
       <div class="field" style="margin-bottom: 8px">
         <label>Fee</label>
         <div class="amount" id="feeAmount">KSh 1600</div>
-        <div class="hint" id="feePurpose">School fee payment</div>
+        <div class="hint" id="feePurpose">Website fee payment</div>
       </div>
 
       <button class="btn btn-green" id="payBtn">Pay with M-Pesa</button>
@@ -297,12 +293,7 @@
       <ul class="pay-list" id="payList"></ul>
     </div>
 
-    <footer>
-      <p>
-        <strong>Project Submission Portal</strong> — submissions are stored locally in this browser and can be exported at any time.
-        No payment is ever required to submit a project.
-      </p>
-    </footer>
+    
   </div>
 
   <script>
