@@ -163,6 +163,9 @@
     th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
     td .url { color: var(--navy); word-break: break-all; }
     .empty { color: var(--muted); font-size: 0.9rem; padding: 12px 0; }
+    .url-ok { color: var(--green); font-weight: 600; }
+    .url-bad { color: var(--red); font-weight: 600; }
+    .url-unknown { color: var(--muted); }
 
     footer {
       text-align: center;
@@ -192,7 +195,7 @@
     </div>
 
     <div class="success" id="successMsg" role="status" aria-live="polite">
-      ✓ Submission received. Your project has been recorded.
+      <span id="successText">✓ Submission received. Your project has been recorded.</span>
     </div>
 
     <!-- ============ SUBMIT FORM ============ -->
@@ -250,6 +253,7 @@
               <th>Admission no.</th>
               <th>Project title</th>
               <th>Website URL</th>
+              <th>URL status</th>
               <th>Description</th>
               <th>Submitted</th>
             </tr>
@@ -302,12 +306,23 @@
             "<td>" + esc(s.admission) + "</td>" +
             "<td>" + esc(s.title) + "</td>" +
             "<td><a class=\"url\" href=\"" + esc(s.url) + "\" target=\"_blank\" rel=\"noopener noreferrer\">" + esc(s.url) + "</a></td>" +
+            "<td>" + urlStatusHtml(s) + "</td>" +
             "<td>" + esc(s.description || "—") + "</td>" +
             "<td>" + esc(new Date(s.submittedAt).toLocaleString()) + "</td>";
           return tr;
         });
       rows.forEach((r) => body.appendChild(r));
       $("emptyLabel").textContent = list.length ? "" : "No submissions yet — use the form above to add the first one.";
+    }
+
+    function urlStatusHtml(s) {
+      if (s.urlStatus === "ok") {
+        return "<span class=\"url-ok\">✓ Reachable" + (s.urlHttpStatus ? " (HTTP " + s.urlHttpStatus + ")" : "") + "</span>";
+      }
+      if (s.urlStatus === "bad") {
+        return "<span class=\"url-bad\">✗ " + esc(s.urlError || "Couldn't reach") + "</span>";
+      }
+      return "<span class=\"url-unknown\">— not checked</span>";
     }
 
     function esc(str) {
@@ -341,19 +356,33 @@
       return ok;
     }
 
-    $("submitForm").addEventListener("submit", (e) => {
+    $("submitForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       if (!validate()) return;
+
+      const owner = $("owner").value.trim();
+      const url = $("url").value.trim();
+      const submitBtn = $("submitForm").querySelector("button[type=submit]");
+      const msg = $("successMsg");
+
+      submitBtn.disabled = true;
+      $("successText").textContent = "Checking website URL…";
+      msg.classList.add("show");
+
+      const check = await checkWebsiteUrl(url);
 
       const list = loadSubmissions();
       list.push({
         id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-        owner: $("owner").value.trim(),
+        owner: owner,
         admission: $("admission").value.trim(),
         title: $("title").value.trim(),
-        url: $("url").value.trim(),
+        url: url,
         description: $("desc").value.trim(),
-        submittedAt: Date.now()
+        submittedAt: Date.now(),
+        urlStatus: check.reachable ? "ok" : "bad",
+        urlHttpStatus: check.status || null,
+        urlError: check.error || null
       });
       saveSubmissions(list);
 
@@ -361,10 +390,11 @@
       $("submitForm").reset();
       document.querySelectorAll(".field").forEach((f) => f.classList.remove("invalid"));
 
-      const msg = $("successMsg");
-      msg.textContent = "✓ Submission received. " + $("owner").value.trim() + " — your project has been recorded.";
-      msg.classList.add("show");
-      setTimeout(() => msg.classList.remove("show"), 6000);
+      $("successText").textContent = check.reachable
+        ? "✓ Submission received. " + owner + " — your website is reachable (HTTP " + (check.status || "OK") + ")."
+        : "⚠ Submission received, but the website could not be reached (" + (check.error || "unknown reason") + "). You can fix the URL and resubmit.";
+      submitBtn.disabled = false;
+      setTimeout(() => msg.classList.remove("show"), 7000);
 
       render();
     });
@@ -373,6 +403,35 @@
     ["owner", "admission", "title", "url"].forEach((id) => {
       $(id).addEventListener("input", () => $("f-" + id).classList.remove("invalid"));
     });
+
+    // ---------- real URL check ----------
+    async function checkWebsiteUrl(url) {
+      // Prefer the serverless checker (accurate HTTP status); fall back to a
+      // client-side reachability check if the endpoint is unavailable.
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 10000);
+        const r = await fetch("/api/check-url", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ url }),
+          signal: ctrl.signal
+        });
+        clearTimeout(t);
+        if (r.ok) return await r.json();
+      } catch {
+        // endpoint unavailable — fall through to client check
+      }
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 10000);
+        await fetch(url, { mode: "no-cors", signal: ctrl.signal });
+        clearTimeout(t);
+        return { reachable: true, status: null, source: "client" };
+      } catch {
+        return { reachable: false, error: "Could not reach the website", source: "client" };
+      }
+    }
 
     // ---------- export ----------
     function download(filename, content, type) {
@@ -389,7 +448,7 @@
     $("exportCsvBtn").addEventListener("click", () => {
       const list = loadSubmissions();
       if (!list.length) { alert("No submissions to export yet."); return; }
-      const header = ["owner", "admission", "title", "url", "description", "submittedAt"];
+      const header = ["owner", "admission", "title", "url", "urlStatus", "urlHttpStatus", "urlError", "description", "submittedAt"];
       const rows = list.map((s) =>
         header.map((h) => '"' + String(s[h] ?? "").replace(/"/g, '""') + '"').join(",")
       );
