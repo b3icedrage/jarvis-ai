@@ -562,10 +562,10 @@
           savePayments(loadPayments().concat({ at: Date.now(), phone, amount: FEE_AMOUNT, status: "push sent" }));
           renderPayments();
         } else {
-          showPayResult("err", "✗ " + (data.error || "Payment request failed.") + (res.status === 503 ? " Add the MPESA_* keys in the project's API Keys tab to enable payments." : ""));
+          showPayResult("err", "✗ " + (data.error || "Payment couldn't be completed. Please try again."));
         }
       } catch {
-        showPayResult("err", "✗ Could not reach the payment service. Try again in a moment.");
+        showPayResult("err", "✗ Payment couldn't be completed. Please try again in a moment.");
       }
       btn.disabled = false;
     });
