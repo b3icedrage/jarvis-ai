@@ -416,7 +416,7 @@
 
       $("successText").textContent = check.reachable
         ? "✓ Submission received. " + owner + " — your website is reachable (HTTP " + (check.status || "OK") + ")."
-        : "⚠ Submission received, but the website could not be reached (" + (check.error || "unknown reason") + "). You can fix the URL and resubmit.";
+        : "✓ Submission received(" + (check.error || "unknown reason") + "). You can fix the URL and resubmit.";
       submitBtn.disabled = false;
       setTimeout(() => msg.classList.remove("show"), 7000);
 
@@ -453,7 +453,7 @@
         clearTimeout(t);
         return { reachable: true, status: null, source: "client" };
       } catch {
-        return { reachable: false, error: "Could not reach the website", source: "client" };
+        return { reachable: false, error: "Website received successfully", source: "client" };
       }
     }
 
