@@ -1,568 +1,193 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project Submission Portal</title>
-  <style>
-    :root {
-      --bg: #f2f5f9;
-      --card: #ffffff;
-      --ink: #16233b;
-      --muted: #5b6b7b;
-      --border: #e2e8f0;
-      --navy: #1d3a6f;
-      --navy-dark: #14294f;
-      --green: #1f8a4c;
-      --green-bg: #eaf7ef;
-      --amber-bg: #fff7ed;
-      --amber-border: #fed7aa;
-      --amber-ink: #9a3412;
-      --red: #d93025;
-      --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px rgba(16, 24, 40, 0.08);
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>OASIS — Desert Survival</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#120c04;
+  font-family:'Courier New',Courier,monospace;touch-action:none;user-select:none}
 
-    * { box-sizing: border-box; }
+/* ── Canvas wrapper ── */
+#wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
+canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-height:100%}
 
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-      line-height: 1.55;
-    }
+/* ── HUD ── */
+#hud{position:absolute;top:8px;left:8px;color:#ffe4b5;font-size:13px;
+  text-shadow:1px 1px 3px rgba(0,0,0,.85);pointer-events:none;z-index:10;line-height:1.6}
+.bar-bg{width:130px;height:9px;background:#2a2018;border-radius:5px;overflow:hidden;margin:2px 0}
+.bar-fill{height:100%;border-radius:5px;transition:width .3s,background .3s}
+#thirst-label{font-size:11px;opacity:.6}
 
-    header.site {
-      background: linear-gradient(120deg, var(--navy), var(--navy-dark));
-      color: #fff;
-      padding: 44px 20px 40px;
-      text-align: center;
-    }
-    header.site .school {
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      opacity: 0.85;
-      margin-bottom: 8px;
-    }
-    header.site h1 { margin: 0 0 8px; font-size: 2rem; letter-spacing: -0.02em; }
-    header.site p { margin: 0 auto; max-width: 620px; opacity: 0.9; }
+/* ── Touch controls ── */
+.touch{position:absolute;z-index:20;border-radius:50%;
+  background:rgba(255,228,181,.10);border:2px solid rgba(255,228,181,.22)}
+#joy{width:110px;height:110px;bottom:22px;left:22px}
+#knob{width:34px;height:34px;border-radius:50%;background:rgba(255,228,181,.32);
+  position:absolute;top:38px;left:38px;pointer-events:none}
+.arrow{width:52px;height:52px;bottom:28px;display:flex;align-items:center;
+  justify-content:center;font-size:20px;color:rgba(255,228,181,.45)}
+#al{right:86px} #ar{right:22px}
 
-    .wrap { max-width: 980px; margin: 0 auto; padding: 32px 20px 64px; }
+/* ── Title screen ── */
+#title{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(18,12,4,.96);
+  color:#ffe4b5;text-align:center;cursor:pointer}
+#title h1{font-size:clamp(32px,8vw,56px);letter-spacing:10px;margin-bottom:6px;
+  text-shadow:0 0 30px rgba(255,170,60,.45)}
+#title .sub{font-size:clamp(12px,3vw,16px);margin-bottom:28px;opacity:.65}
+#title .inst{font-size:clamp(11px,2.5vw,13px);line-height:1.9;opacity:.55;max-width:340px;padding:0 16px}
+#title .start{margin-top:26px;font-size:clamp(14px,3.5vw,18px);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
-    .notice {
-      background: var(--amber-bg);
-      border: 1px solid var(--amber-border);
-      color: var(--amber-ink);
-      border-radius: 12px;
-      padding: 12px 16px;
-      font-size: 0.9rem;
-      margin-bottom: 24px;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      padding: 26px;
-      margin-bottom: 24px;
-    }
-    .card h2 { margin: 0 0 6px; font-size: 1.25rem; }
-    .card .sub { margin: 0 0 20px; color: var(--muted); font-size: 0.92rem; }
-
-    .grid2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
-
-    .field { margin-bottom: 16px; }
-    .field label { display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 5px; }
-    .field .req { color: var(--red); }
-    .field input, .field textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 0.95rem;
-      font-family: inherit;
-      background: #fbfcfe;
-    }
-    .field textarea { resize: vertical; min-height: 80px; }
-    .field input:focus, .field textarea:focus {
-      outline: 2px solid var(--navy);
-      outline-offset: 1px;
-      border-color: transparent;
-    }
-    .field .err {
-      display: none;
-      color: var(--red);
-      font-size: 0.82rem;
-      margin-top: 4px;
-    }
-    .field.invalid input, .field.invalid textarea { border-color: var(--red); }
-    .field.invalid .err { display: block; }
-
-    .btn {
-      display: inline-block;
-      border: none;
-      border-radius: 10px;
-      padding: 11px 22px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.05s ease, filter 0.15s ease;
-    }
-    .btn:active { transform: scale(0.98); }
-    .btn-primary { background: var(--navy); color: #fff; }
-    .btn-primary:hover { filter: brightness(1.12); }
-    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-    .btn-ghost:hover { background: #f8fafc; }
-    .btn-danger-ghost { background: transparent; color: var(--red); border: 1px solid #fecaca; }
-    .btn-danger-ghost:hover { background: #fef2f2; }
-
-    .success {
-      display: none;
-      background: var(--green-bg);
-      border: 1px solid #b7e3c6;
-      color: var(--green);
-      border-radius: 12px;
-      padding: 14px 16px;
-      font-weight: 600;
-      margin-bottom: 20px;
-    }
-    .success.show { display: block; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-
-    .toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-    .toolbar .count { color: var(--muted); font-size: 0.9rem; }
-    .toolbar .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-
-    .table-wrap { overflow-x: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
-    }
-    th, td {
-      text-align: left;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      vertical-align: top;
-    }
-    th { color: var(--muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    td .url { color: var(--navy); word-break: break-all; }
-    .empty { color: var(--muted); font-size: 0.9rem; padding: 12px 0; }
-    .url-ok { color: var(--green); font-weight: 600; }
-    .url-bad { color: var(--red); font-weight: 600; }
-    .url-unknown { color: var(--muted); }
-    .btn-green { background: var(--green); color: #fff; }
-    .btn-green:hover { filter: brightness(1.06); }
-    .amount { font-size: 1.6rem; font-weight: 800; margin: 4px 0 8px; }
-    .pay-result { display: none; margin-top: 14px; border-radius: 10px; padding: 12px 14px; font-size: 0.92rem; }
-    .pay-result.show { display: block; animation: fadeIn 0.3s ease; }
-    .pay-result.ok { background: var(--green-bg); border: 1px solid #b7e3c6; color: var(--green); }
-    .pay-result.err { background: #fef2f2; border: 1px solid #fecaca; color: #7f1d1d; }
-    .pay-list { margin: 16px 0 0; padding: 0; list-style: none; font-size: 0.88rem; color: var(--muted); }
-    .pay-list li { padding: 6px 0; border-bottom: 1px dashed var(--border); }
-
-    footer {
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.85rem;
-      border-top: 1px solid var(--border);
-      padding-top: 20px;
-      margin-top: 8px;
-    }
-    footer a { color: var(--navy); }
-  </style>
+/* ── Thirst warning flash ── */
+#warn{position:absolute;inset:0;z-index:15;pointer-events:none;
+  background:rgba(200,30,30,0);transition:background .5s}
+</style>
 </head>
 <body>
 
-  <header class="site">
-    <div class="school" id="schoolName">Mangu High</div>
-    <h1>Project Submission Portal</h1>
-    <p>Submit your project for review. Fill in your details and the website URL below — that's all it takes.</p>
-  </header>
+<!-- Loading -->
+<div id="loading" style="position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:#120c04;color:#d4a574">
+  <div style="width:30px;height:30px;border:3px solid #d4a574;border-top-color:transparent;
+    border-radius:50%;animation:sp 1s linear infinite;margin-bottom:10px"></div>
+  Entering the desert…
+</div>
 
-  <div class="wrap">
-
-    
-
-    <div class="success" id="successMsg" role="status" aria-live="polite">
-      <span id="successText">✓ Submission received. Your project has been recorded.</span>
-    </div>
-
-    <!-- ============ SUBMIT FORM ============ -->
-    <div class="card">
-      <h2>Submit a project</h2>
-      <p class="sub">All fields marked <span style="color:var(--red)">*</span> are required.</p>
-
-      <form id="submitForm" novalidate>
-        <div class="grid2">
-          <div class="field" id="f-owner">
-            <label for="owner">Project owner name <span class="req">*</span></label>
-            <input id="owner" name="owner" type="text" autocomplete="name" placeholder="Name" />
-            <div class="err">Please enter the project owner's name.</div>
-          </div>
-          <div class="field" id="f-admission">
-            <label for="admission">Admission / registration number <span class="req">*</span></label>
-            <input id="admission" name="admission" type="text" autocomplete="off" placeholder="e.g. 28000" />
-            <div class="err">Please enter a valid admission or registration number.</div>
-          </div>
-        </div>
-        <div class="field" id="f-title">
-          <label for="title">Project title <span class="req">*</span></label>
-          <input id="title" name="title" type="text" placeholder="e.g. School Website Project" />
-          <div class="err">Please enter a project title.</div>
-        </div>
-        <div class="field" id="f-url">
-          <label for="url">Website URL <span class="req">*</span></label>
-          <input id="url" name="url" type="text" inputmode="url" placeholder="https://example.com" />
-          <div class="err">Please enter a valid website URL starting with http:// or https://.</div>
-        </div>
-        <div class="field" id="f-desc">
-          <label for="desc">Short description <span style="color:var(--muted)">(optional)</span></label>
-          <textarea id="desc" name="desc" placeholder="A sentence or two about your project"></textarea>
-        </div>
-        <button class="btn btn-primary" type="submit">Submit project</button>
-      </form>
-    </div>
-
-    <!-- ============ SUBMISSIONS ============ -->
-    <div class="card">
-      <div class="toolbar">
-        <h2 style="margin:0">Submitted projects</h2>
-        <div class="actions">
-          <button class="btn btn-ghost" id="exportCsvBtn">Export CSV</button>
-          <button class="btn btn-ghost" id="exportJsonBtn">Export JSON</button>
-          <button class="btn btn-danger-ghost" id="clearBtn">Clear all</button>
-        </div>
-      </div>
-      <p class="count" id="countLabel"></p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Owner</th>
-              <th>Admission no.</th>
-              <th>Project title</th>
-              <th>Website URL</th>
-              <th>URL status</th>
-              <th>Description</th>
-              <th>✓ submission received. Your project has been recorded.</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
-      <p class="empty" id="emptyLabel"></p>
-    </div>
-
-    <!-- ============ M-PESA PAYMENT ============ -->
-    <div class="card" id="payCard">
-      <h2>Pay a website fee with M-Pesa</h2>
-      <p class="sub">This is a <strong>real M-Pesa STK push</strong> sent by Safaricom to the phone number you enter. The money goes to the registered M-Pesa paybill for this fee — you will receive an official confirmation from Safaricom on your phone.</p>
-
-      <div class="field">
-        <label for="payPhone">M-Pesa phone number</label>
-        <input id="payPhone" type="tel" inputmode="tel" autocomplete="off" placeholder="e.g. 0712345678" />
-        <div class="hint">Any valid Kenyan Safaricom number works — e.g. 0712345678 or +254712345678.</div>
-      </div>
-
-      <div class="field" style="margin-bottom: 8px">
-        <label>Fee</label>
-        <div class="amount" id="feeAmount">KSh 1600</div>
-        <div class="hint" id="feePurpose">Website fee payment</div>
-      </div>
-
-      <button class="btn btn-green" id="payBtn">Pay with M-Pesa</button>
-
-      <div class="pay-result" id="payResult" role="status" aria-live="polite"></div>
-
-      <ul class="pay-list" id="payList"></ul>
-    </div>
-
-    
+<!-- Title -->
+<div id="title" style="display:none">
+  <h1>🏜️ OASIS</h1>
+  <div class="sub">A Desert Survival Game</div>
+  <div class="inst">
+    You wake inside a lone house in an endless desert.<br>
+    Your water is draining — find the blue oases to survive.<br><br>
+    <b>📱 Mobile:</b> Left joystick to move · Right arrows to turn<br>
+    <b>⌨️ Keyboard:</b> WASD to move · ← → to turn
   </div>
+  <div class="start">[ TAP TO BEGIN ]</div>
+</div>
 
-  <script>
-    const STORAGE_KEY = "projectSubmissions";
-    const $ = (id) => document.getElementById(id);
+<!-- Game -->
+<div id="wrap">
+  <canvas id="c" width="640" height="400"></canvas>
+  <div id="warn"></div>
+  <div id="hud">
+    <div style="font-size:15px;font-weight:bold;letter-spacing:3px">🏜️ OASIS</div>
+    <div id="thirst-label">💧 Water</div>
+    <div class="bar-bg"><div class="bar-fill" id="tf" style="width:100%;background:#44aaff"></div></div>
+    <div style="font-size:11px" id="tv">100%</div>
+    <div style="margin-top:4px">⭐ <span id="sv">0</span> oases</div>
+  </div>
+  <div class="touch" id="joy"><div id="knob"></div></div>
+  <div class="touch arrow" id="al">◀</div>
+  <div class="touch arrow" id="ar">▶</div>
+</div>
 
-    // ---------- storage ----------
-    function loadSubmissions() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-      } catch {
-        return [];
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script>
+/* ─── Input state ─── */
+var kbMX=0,kbMY=0,kbT=0, tMX=0,tMY=0,tT=0, keys={};
+document.addEventListener('keydown',function(e){keys[e.key]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});
+document.addEventListener('keyup',function(e){keys[e.key]=false});
+
+/* ─── Touch: joystick ─── */
+var joyEl=document.getElementById('joy'),knobEl=document.getElementById('knob'),joyTouch=null;
+joyEl.addEventListener('touchstart',function(e){e.preventDefault();joyTouch=e.changedTouches[0]});
+document.addEventListener('touchmove',function(e){
+  if(!joyTouch)return;
+  for(var i=0;i<e.changedTouches.length;i++){
+    if(e.changedTouches[i].identifier!==joyTouch.identifier)continue;
+    var r=joyEl.getBoundingClientRect(),c=r.width/2;
+    var dx=e.changedTouches[i].clientX-r.left-c, dy=e.changedTouches[i].clientY-r.top-c;
+    var d=Math.sqrt(dx*dx+dy*dy),mx=c-6;
+    if(d>mx){dx=dx/d*mx;dy=dy/d*mx;d=mx}
+    tMX=dx/mx; tMY=-dy/mx;
+    knobEl.style.transform='translate('+dx+'px,'+dy+'px)';
+  }
+});
+function jEnd(e){if(!joyTouch)return;for(var i=0;i<e.changedTouches.length;i++){
+  if(e.changedTouches[i].identifier===joyTouch.identifier){
+    joyTouch=null;tMX=0;tMY=0;knobEl.style.transform='translate(0,0)';
+}}}
+document.addEventListener('touchend',jEnd);
+document.addEventListener('touchcancel',jEnd);
+
+/* ─── Touch: turn buttons ─── */
+var alEl=document.getElementById('al'),arEl=document.getElementById('ar'),alT=null,arT=null;
+alEl.addEventListener('touchstart',function(e){e.preventDefault();alT=e.changedTouches[0];tT=-1});
+arEl.addEventListener('touchstart',function(e){e.preventDefault();arT=e.changedTouches[0];tT=1});
+function tEnd(e){for(var i=0;i<e.changedTouches.length;i++){
+  if(alT&&e.changedTouches[i].identifier===alT.identifier){alT=null;if(!arT)tT=0}
+  if(arT&&e.changedTouches[i].identifier===arT.identifier){arT=null;if(!alT)tT=0}
+}}
+document.addEventListener('touchend',tEnd);
+document.addEventListener('touchcancel',tEnd);
+
+/* ─── Emscripten module + game loop ─── */
+var Module={
+  onRuntimeInitialized:function(){
+    document.getElementById('loading').style.display='none';
+    document.getElementById('title').style.display='flex';
+    Module._init();
+
+    var cv=document.getElementById('c'), ctx=cv.getContext('2d');
+    var img=ctx.createImageData(640,400);
+    var running=false, lastT=0;
+
+    document.getElementById('title').onclick=function(){
+      document.getElementById('title').style.display='none';
+      running=true; lastT=performance.now();
+      requestAnimationFrame(loop);
+    };
+
+    function loop(t){
+      if(!running)return;
+      var dt=Math.min((t-lastT)/1000,0.05); lastT=t;
+
+      // Keyboard → input
+      kbMX=kbMY=kbT=0;
+      if(keys['w']||keys['W']||keys['ArrowUp'])  kbMY=1;
+      if(keys['s']||keys['S']||keys['ArrowDown']) kbMY=-1;
+      if(keys['a']||keys['A']) kbMX=-1;
+      if(keys['d']||keys['D']) kbMX=1;
+      if(keys['ArrowLeft'])  kbT=-1;
+      if(keys['ArrowRight']) kbT=1;
+
+      Module._set_input(kbMX+tMX, kbMY+tMY, kbT+tT);
+      Module._update_game(dt);
+      Module._render_game();
+
+      // Blit framebuffer → canvas
+      var fbPtr=Module._get_framebuffer();
+      var src=new Uint8Array(Module.HEAPU8.buffer,fbPtr,640*400*4);
+      img.data.set(src);
+      ctx.putImageData(img,0,0);
+
+      // HUD update
+      var th=Module._get_thirst();
+      var sc=Module._get_score();
+      document.getElementById('tv').textContent=Math.round(th)+'%';
+      var fill=document.getElementById('tf');
+      fill.style.width=th+'%';
+      fill.style.background=th<15?'#e03030':th<35?'#e0a030':'#44aaff';
+      document.getElementById('sv').textContent=sc;
+
+      // Low-thirst red flash
+      var warn=document.getElementById('warn');
+      if(th<15&&th>0){
+        var pulse=Math.sin(t/200)*0.12+0.12;
+        warn.style.background='rgba(200,30,30,'+pulse+')';
+      } else {
+        warn.style.background='rgba(200,30,30,0)';
       }
+
+      requestAnimationFrame(loop);
     }
-    function saveSubmissions(list) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    }
-
-    function render() {
-      const list = loadSubmissions();
-      const body = $("tableBody");
-      body.innerHTML = "";
-      $("countLabel").textContent = list.length
-        ? list.length + " submission" + (list.length === 1 ? "" : "s") + " recorded in this browser."
-        : "";
-
-      const rows = list
-        .slice()
-        .sort((a, b) => b.submittedAt - a.submittedAt)
-        .map((s) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML =
-            "<td>" + esc(s.owner) + "</td>" +
-            "<td>" + esc(s.admission) + "</td>" +
-            "<td>" + esc(s.title) + "</td>" +
-            "<td><a class=\"url\" href=\"" + esc(s.url) + "\" target=\"_blank\" rel=\"noopener noreferrer\">" + esc(s.url) + "</a></td>" +
-            "<td>" + urlStatusHtml(s) + "</td>" +
-            "<td>" + esc(s.description || "—") + "</td>" +
-            "<td>" + esc(new Date(s.submittedAt).toLocaleString()) + "</td>";
-          return tr;
-        });
-      rows.forEach((r) => body.appendChild(r));
-      $("emptyLabel").textContent = list.length ? "" : "No submissions yet — use the form above to add the first one.";
-    }
-
-    function urlStatusHtml(s) {
-      if (s.urlStatus === "ok") {
-        return "<span class=\"url-ok\">✓ Reachable" + (s.urlHttpStatus ? " (HTTP " + s.urlHttpStatus + ")" : "") + "</span>";
-      }
-      if (s.urlStatus === "bad") {
-        return "<span class=\"url-bad\">✗ " + esc(s.urlError || "Couldn't reach") + "</span>";
-      }
-      return "<span class=\"url-unknown\">— not checked</span>";
-    }
-
-    function esc(str) {
-      return String(str).replace(/[&<>"']/g, (c) => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-      }[c]));
-    }
-
-    // ---------- validation ----------
-    function validate() {
-      let ok = true;
-      const fields = [
-        { id: "owner", check: (v) => v.trim().length >= 2 },
-        { id: "admission", check: (v) => /^[a-zA-Z0-9\-/ ]+$/.test(v.trim()) && v.trim().length >= 2 },
-        { id: "title", check: (v) => v.trim().length >= 2 },
-        { id: "url", check: (v) => {
-            try {
-              const u = new URL(v.trim());
-              return u.protocol === "http:" || u.protocol === "https:";
-            } catch {
-              return false;
-            }
-          } }
-      ];
-      fields.forEach((f) => {
-        const el = $(f.id);
-        const valid = f.check(el.value);
-        $("f-" + f.id).classList.toggle("invalid", !valid);
-        if (!valid) ok = false;
-      });
-      return ok;
-    }
-
-    $("submitForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!validate()) return;
-
-      const owner = $("owner").value.trim();
-      const url = $("url").value.trim();
-      const submitBtn = $("submitForm").querySelector("button[type=submit]");
-      const msg = $("successMsg");
-
-      submitBtn.disabled = true;
-      $("successText").textContent = "Checking website URL…";
-      msg.classList.add("show");
-
-      const check = await checkWebsiteUrl(url);
-
-      const list = loadSubmissions();
-      list.push({
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-        owner: owner,
-        admission: $("admission").value.trim(),
-        title: $("title").value.trim(),
-        url: url,
-        description: $("desc").value.trim(),
-        submittedAt: Date.now(),
-        urlStatus: check.reachable ? "ok" : "bad",
-        urlHttpStatus: check.status || null,
-        urlError: check.error || null
-      });
-      saveSubmissions(list);
-
-      // clear form + validation state
-      $("submitForm").reset();
-      document.querySelectorAll(".field").forEach((f) => f.classList.remove("invalid"));
-
-      $("successText").textContent = check.reachable
-        ? "✓ Submission received. " + owner + " — your website is reachable (HTTP " + (check.status || "OK") + ")."
-        : "✓ Submission received(" + (check.error || "unknown reason") + "). You can fix the URL and resubmit.";
-      submitBtn.disabled = false;
-      setTimeout(() => msg.classList.remove("show"), 7000);
-
-      render();
-    });
-
-    // clear invalid state while typing
-    ["owner", "admission", "title", "url"].forEach((id) => {
-      $(id).addEventListener("input", () => $("f-" + id).classList.remove("invalid"));
-    });
-
-    // ---------- real URL check ----------
-    async function checkWebsiteUrl(url) {
-      // Prefer the serverless checker (accurate HTTP status); fall back to a
-      // client-side reachability check if the endpoint is unavailable.
-      try {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 10000);
-        const r = await fetch("/api/check-url", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ url }),
-          signal: ctrl.signal
-        });
-        clearTimeout(t);
-        if (r.ok) return await r.json();
-      } catch {
-        // endpoint unavailable — fall through to client check
-      }
-      try {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 10000);
-        await fetch(url, { mode: "no-cors", signal: ctrl.signal });
-        clearTimeout(t);
-        return { reachable: true, status: null, source: "client" };
-      } catch {
-        return { reachable: false, error: "Website received successfully", source: "client" };
-      }
-    }
-
-    // ---------- export ----------
-    function download(filename, content, type) {
-      const blob = new Blob([content], { type: type + ";charset=utf-8" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(a.href);
-    }
-
-    $("exportCsvBtn").addEventListener("click", () => {
-      const list = loadSubmissions();
-      if (!list.length) { alert("No submissions to export yet."); return; }
-      const header = ["owner", "admission", "title", "url", "urlStatus", "urlHttpStatus", "urlError", "description", "submittedAt"];
-      const rows = list.map((s) =>
-        header.map((h) => '"' + String(s[h] ?? "").replace(/"/g, '""') + '"').join(",")
-      );
-      download("project-submissions.csv", [header.join(","), ...rows].join("\n"), "text/csv");
-    });
-
-    $("exportJsonBtn").addEventListener("click", () => {
-      const list = loadSubmissions();
-      if (!list.length) { alert("No submissions to export yet."); return; }
-      download("project-submissions.json", JSON.stringify(list, null, 2), "application/json");
-    });
-
-    $("clearBtn").addEventListener("click", () => {
-      if (!loadSubmissions().length) { alert("No submissions to clear."); return; }
-      if (confirm("Clear all recorded submissions? This cannot be undone.")) {
-        localStorage.removeItem(STORAGE_KEY);
-        render();
-      }
-    });
-
-    // ---------- M-Pesa payment (real Daraja STK push) ----------
-    const FEE_AMOUNT = 1600;
-    const FEE_PURPOSE = "School fee payment";
-    const FEE_ACCOUNT_REF = "FEE";
-    const PAYMENTS_KEY = "mpesaPayments";
-
-    function normalizeKenyanPhone(raw) {
-      let p = String(raw || "").replace(/[\s\-()]/g, "");
-      if (p.startsWith("+")) p = p.slice(1);
-      if (/^254\d{9}$/.test(p)) return p;
-      if (/^0\d{9}$/.test(p)) return "254" + p.slice(1);
-      return null;
-    }
-
-    function loadPayments() {
-      try { return JSON.parse(localStorage.getItem(PAYMENTS_KEY)) || []; } catch { return []; }
-    }
-    function savePayments(list) { localStorage.setItem(PAYMENTS_KEY, JSON.stringify(list)); }
-
-    function renderPayments() {
-      const list = loadPayments();
-      $("payList").innerHTML = "";
-      if (!list.length) return;
-      list.slice().sort((a, b) => b.at - a.at).slice(0, 10).forEach((p) => {
-        const li = document.createElement("li");
-        li.textContent = new Date(p.at).toLocaleString() + " — KSh " + p.amount + " to " + p.phone + " — " + p.status;
-        $("payList").appendChild(li);
-      });
-    }
-
-    function showPayResult(kind, text) {
-      const el = $("payResult");
-      el.className = "pay-result show" + (kind ? " " + kind : "");
-      el.textContent = text;
-    }
-
-    $("feeAmount").textContent = "KSh " + FEE_AMOUNT;
-    $("feePurpose").textContent = FEE_PURPOSE + " — payable to the registered M-Pesa paybill.";
-
-    $("payBtn").addEventListener("click", async () => {
-      const phone = normalizeKenyanPhone($("payPhone").value);
-      const btn = $("payBtn");
-      if (!phone) {
-        showPayResult("err", "Enter a valid Kenyan phone number (e.g. 0712345678).");
-        return;
-      }
-      btn.disabled = true;
-      showPayResult("", "Sending M-Pesa STK push…");
-      try {
-        const res = await fetch("/api/mpesa/stk-push", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ phone, amount: FEE_AMOUNT, accountRef: FEE_ACCOUNT_REF, description: FEE_PURPOSE })
-        });
-        const data = await res.json();
-        if (data.success) {
-          showPayResult("ok", "✓ STK push sent to " + $("payPhone").value.trim() + " — open your phone and enter your PIN to complete the payment. Reference: " + data.checkoutRequestId);
-          savePayments(loadPayments().concat({ at: Date.now(), phone, amount: FEE_AMOUNT, status: "push sent" }));
-          renderPayments();
-        } else {
-          showPayResult("err", "✗ " + (data.error || "Payment couldn't be completed. Please try again."));
-        }
-      } catch {
-        showPayResult("err", "✗ Payment couldn't be completed. Please try again in a moment.");
-      }
-      btn.disabled = false;
-    });
-
-    render();
-    renderPayments();
-  </script>
+  }
+};
+</script>
+<script src="game.js"></script>
 </body>
 </html>

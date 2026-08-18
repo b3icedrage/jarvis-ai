@@ -1,5 +1,5 @@
-.env
-
-# Python
 __pycache__/
-*.py[cod]
+*.pyc
+*.o
+*.obj
+node_modules/
