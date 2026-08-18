@@ -6,67 +6,98 @@
 <title>OASIS — Desert Survival</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#120c04;
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0804;
   font-family:'Courier New',Courier,monospace;touch-action:none;user-select:none}
 
-/* ── Canvas wrapper ── */
 #wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
 canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-height:100%}
 
-/* ── HUD ── */
-#hud{position:absolute;top:8px;left:8px;color:#ffe4b5;font-size:13px;
-  text-shadow:1px 1px 3px rgba(0,0,0,.85);pointer-events:none;z-index:10;line-height:1.6}
-.bar-bg{width:130px;height:9px;background:#2a2018;border-radius:5px;overflow:hidden;margin:2px 0}
-.bar-fill{height:100%;border-radius:5px;transition:width .3s,background .3s}
-#thirst-label{font-size:11px;opacity:.6}
+/* HUD */
+#hud{position:absolute;top:6px;left:6px;color:#ffe4b5;font-size:12px;
+  text-shadow:1px 1px 3px rgba(0,0,0,.9);pointer-events:none;z-index:10;line-height:1.5}
+.bar-bg{width:120px;height:8px;background:#1a1408;border:1px solid rgba(255,228,181,.15);
+  border-radius:4px;overflow:hidden;margin:2px 0}
+.bar-fill{height:100%;border-radius:4px;transition:width .25s,background .25s}
+#hud .dim{opacity:.55;font-size:10px}
 
-/* ── Touch controls ── */
+/* Sprint indicator */
+#sprint-indicator{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);
+  color:rgba(255,228,181,.6);font-size:11px;pointer-events:none;z-index:10;
+  text-shadow:1px 1px 2px rgba(0,0,0,.8);opacity:0;transition:opacity .2s}
+#sprint-indicator.show{opacity:1}
+
+/* Touch controls */
 .touch{position:absolute;z-index:20;border-radius:50%;
-  background:rgba(255,228,181,.10);border:2px solid rgba(255,228,181,.22)}
-#joy{width:110px;height:110px;bottom:22px;left:22px}
-#knob{width:34px;height:34px;border-radius:50%;background:rgba(255,228,181,.32);
-  position:absolute;top:38px;left:38px;pointer-events:none}
-.arrow{width:52px;height:52px;bottom:28px;display:flex;align-items:center;
-  justify-content:center;font-size:20px;color:rgba(255,228,181,.45)}
-#al{right:86px} #ar{right:22px}
+  background:rgba(255,228,181,.08);border:2px solid rgba(255,228,181,.18)}
+#joy{width:110px;height:110px;bottom:20px;left:20px}
+#knob{width:32px;height:32px;border-radius:50%;background:rgba(255,228,181,.28);
+  position:absolute;top:39px;left:39px;pointer-events:none}
+.arrow{width:50px;height:50px;bottom:26px;display:flex;align-items:center;
+  justify-content:center;font-size:18px;color:rgba(255,228,181,.4)}
+#al{right:82px} #ar{right:18px}
+.sprint-btn{width:44px;height:44px;bottom:90px;right:52px;font-size:10px;
+  display:flex;align-items:center;justify-content:center;color:rgba(255,228,181,.5)}
 
-/* ── Title screen ── */
+/* Title */
 #title{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;background:rgba(18,12,4,.96);
-  color:#ffe4b5;text-align:center;cursor:pointer}
-#title h1{font-size:clamp(32px,8vw,56px);letter-spacing:10px;margin-bottom:6px;
-  text-shadow:0 0 30px rgba(255,170,60,.45)}
-#title .sub{font-size:clamp(12px,3vw,16px);margin-bottom:28px;opacity:.65}
-#title .inst{font-size:clamp(11px,2.5vw,13px);line-height:1.9;opacity:.55;max-width:340px;padding:0 16px}
-#title .start{margin-top:26px;font-size:clamp(14px,3.5vw,18px);animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  align-items:center;justify-content:center;background:rgba(10,8,4,.97);cursor:pointer}
+#title-bg{position:absolute;inset:0;overflow:hidden}
+#title-bg canvas{width:100%;height:100%;opacity:.3}
+#title-content{position:relative;z-index:2;text-align:center;padding:0 20px}
+#title h1{font-size:clamp(36px,9vw,64px);letter-spacing:12px;
+  text-shadow:0 0 40px rgba(255,170,60,.5),0 0 80px rgba(255,120,30,.2);
+  color:#ffe4b5}
+#title .sub{font-size:clamp(11px,2.8vw,15px);margin:8px 0 30px;opacity:.55;letter-spacing:4px}
+#title .inst{font-size:clamp(10px,2.2vw,12px);line-height:2;opacity:.45;max-width:360px;margin:0 auto}
+#title .start{margin-top:30px;font-size:clamp(14px,3.5vw,20px);letter-spacing:3px;
+  animation:pulse 2.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.97)}}
 
-/* ── Thirst warning flash ── */
+/* Warning flash */
 #warn{position:absolute;inset:0;z-index:15;pointer-events:none;
-  background:rgba(200,30,30,0);transition:background .5s}
+  background:rgba(200,25,25,0);transition:background .4s}
+
+/* Game Over */
+#gameover{position:absolute;inset:0;z-index:35;display:none;flex-direction:column;
+  align-items:center;justify-content:center;background:rgba(10,4,2,.95);cursor:pointer}
+#gameover h2{font-size:clamp(28px,7vw,48px);color:#e04040;letter-spacing:6px;margin-bottom:12px}
+#gameover .go-score{font-size:clamp(14px,3.5vw,20px);color:#ffe4b5;margin-bottom:24px;opacity:.7}
+#gameover .restart{font-size:clamp(13px,3vw,18px);color:#ffe4b5;animation:pulse 2s ease-in-out infinite;letter-spacing:2px}
+
+/* Loading */
+#loading{position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;background:#0a0804;color:#d4a574}
+.spin{width:28px;height:28px;border:3px solid #d4a574;border-top-color:transparent;
+  border-radius:50%;animation:sp 1s linear infinite;margin-bottom:10px}
+@keyframes sp{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<!-- Loading -->
-<div id="loading" style="position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;background:#120c04;color:#d4a574">
-  <div style="width:30px;height:30px;border:3px solid #d4a574;border-top-color:transparent;
-    border-radius:50%;animation:sp 1s linear infinite;margin-bottom:10px"></div>
-  Entering the desert…
+<div id="loading"><div class="spin"></div><div>Entering the desert…</div></div>
+
+<!-- Title Screen -->
+<div id="title" style="display:none">
+  <div id="title-bg"><canvas id="title-canvas" width="320" height="200"></canvas></div>
+  <div id="title-content">
+    <h1>🏜️ OASIS</h1>
+    <div class="sub">A DESERT SURVIVAL GAME</div>
+    <div class="inst">
+      You wake in a lone house in an endless desert.<br>
+      Your water is draining — find the blue oases to survive.<br><br>
+      <b>📱 Mobile:</b> Left joystick · Right arrows to turn<br>
+      <b>⌨️ Keyboard:</b> WASD to move · ← → to turn<br>
+      <b>🏃 Sprint:</b> Hold SHIFT or tap sprint button
+    </div>
+    <div class="start">[ TAP TO BEGIN ]</div>
+  </div>
 </div>
 
-<!-- Title -->
-<div id="title" style="display:none">
-  <h1>🏜️ OASIS</h1>
-  <div class="sub">A Desert Survival Game</div>
-  <div class="inst">
-    You wake inside a lone house in an endless desert.<br>
-    Your water is draining — find the blue oases to survive.<br><br>
-    <b>📱 Mobile:</b> Left joystick to move · Right arrows to turn<br>
-    <b>⌨️ Keyboard:</b> WASD to move · ← → to turn
-  </div>
-  <div class="start">[ TAP TO BEGIN ]</div>
+<!-- Game Over -->
+<div id="gameover">
+  <h2>☠️ LOST IN THE DESERT</h2>
+  <div class="go-score">Oases found: <span id="go-score">0</span></div>
+  <div class="restart">[ TAP TO TRY AGAIN ]</div>
 </div>
 
 <!-- Game -->
@@ -74,25 +105,77 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-
   <canvas id="c" width="640" height="400"></canvas>
   <div id="warn"></div>
   <div id="hud">
-    <div style="font-size:15px;font-weight:bold;letter-spacing:3px">🏜️ OASIS</div>
-    <div id="thirst-label">💧 Water</div>
+    <div style="font-size:14px;font-weight:bold;letter-spacing:3px">🏜️ OASIS</div>
+    <div class="dim">💧 Water</div>
     <div class="bar-bg"><div class="bar-fill" id="tf" style="width:100%;background:#44aaff"></div></div>
-    <div style="font-size:11px" id="tv">100%</div>
-    <div style="margin-top:4px">⭐ <span id="sv">0</span> oases</div>
+    <div style="font-size:10px" id="tv">100%</div>
+    <div style="margin-top:3px">⭐ <span id="sv">0</span> <span class="dim">oases</span></div>
+    <div id="compass" class="dim" style="margin-top:2px;font-size:10px"></div>
   </div>
+  <div id="sprint-indicator">🏃 SPRINTING</div>
   <div class="touch" id="joy"><div id="knob"></div></div>
   <div class="touch arrow" id="al">◀</div>
   <div class="touch arrow" id="ar">▶</div>
+  <div class="touch sprint-btn" id="sprint-touch">🏃</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script>
-/* ─── Input state ─── */
+/* ─── SOUND ENGINE (Web Audio API) ─── */
+var audioCtx = null;
+function initAudio() { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+
+function playSound(type) {
+    if (!audioCtx) return;
+    try {
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        var t = audioCtx.currentTime;
+        switch(type) {
+            case 1: // Footstep
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(80 + Math.random() * 40, t);
+                gain.gain.setValueAtTime(0.08, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+                osc.start(t); osc.stop(t + 0.08);
+                break;
+            case 2: // Drink — ascending sparkle
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, t);
+                osc.frequency.exponentialRampToValueAtTime(1200, t + 0.3);
+                gain.gain.setValueAtTime(0.12, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+                osc.start(t); osc.stop(t + 0.4);
+                break;
+            case 3: // Death — descending tone
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, t);
+                osc.frequency.exponentialRampToValueAtTime(60, t + 0.8);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+                osc.start(t); osc.stop(t + 0.8);
+                break;
+            case 4: // Warning beep
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, t);
+                gain.gain.setValueAtTime(0.06, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+                osc.start(t); osc.stop(t + 0.12);
+                break;
+        }
+    } catch(e) {}
+}
+
+/* ─── INPUT ─── */
 var kbMX=0,kbMY=0,kbT=0, tMX=0,tMY=0,tT=0, keys={};
-document.addEventListener('keydown',function(e){keys[e.key]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});
+var sprintTouch = false;
+document.addEventListener('keydown',function(e){keys[e.key]=true;
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});
 document.addEventListener('keyup',function(e){keys[e.key]=false});
 
-/* ─── Touch: joystick ─── */
+/* ─── Touch: Joystick ─── */
 var joyEl=document.getElementById('joy'),knobEl=document.getElementById('knob'),joyTouch=null;
 joyEl.addEventListener('touchstart',function(e){e.preventDefault();joyTouch=e.changedTouches[0]});
 document.addEventListener('touchmove',function(e){
@@ -102,7 +185,7 @@ document.addEventListener('touchmove',function(e){
     var r=joyEl.getBoundingClientRect(),c=r.width/2;
     var dx=e.changedTouches[i].clientX-r.left-c, dy=e.changedTouches[i].clientY-r.top-c;
     var d=Math.sqrt(dx*dx+dy*dy),mx=c-6;
-    if(d>mx){dx=dx/d*mx;dy=dy/d*mx;d=mx}
+    if(d>mx){dx=dx/d*mx;dy=dy/d*mx}
     tMX=dx/mx; tMY=-dy/mx;
     knobEl.style.transform='translate('+dx+'px,'+dy+'px)';
   }
@@ -111,10 +194,9 @@ function jEnd(e){if(!joyTouch)return;for(var i=0;i<e.changedTouches.length;i++){
   if(e.changedTouches[i].identifier===joyTouch.identifier){
     joyTouch=null;tMX=0;tMY=0;knobEl.style.transform='translate(0,0)';
 }}}
-document.addEventListener('touchend',jEnd);
-document.addEventListener('touchcancel',jEnd);
+document.addEventListener('touchend',jEnd);document.addEventListener('touchcancel',jEnd);
 
-/* ─── Touch: turn buttons ─── */
+/* ─── Touch: Turn + Sprint ─── */
 var alEl=document.getElementById('al'),arEl=document.getElementById('ar'),alT=null,arT=null;
 alEl.addEventListener('touchstart',function(e){e.preventDefault();alT=e.changedTouches[0];tT=-1});
 arEl.addEventListener('touchstart',function(e){e.preventDefault();arT=e.changedTouches[0];tT=1});
@@ -122,71 +204,151 @@ function tEnd(e){for(var i=0;i<e.changedTouches.length;i++){
   if(alT&&e.changedTouches[i].identifier===alT.identifier){alT=null;if(!arT)tT=0}
   if(arT&&e.changedTouches[i].identifier===arT.identifier){arT=null;if(!alT)tT=0}
 }}
-document.addEventListener('touchend',tEnd);
-document.addEventListener('touchcancel',tEnd);
+document.addEventListener('touchend',tEnd);document.addEventListener('touchcancel',tEnd);
 
-/* ─── Emscripten module + game loop ─── */
+var sprintEl=document.getElementById('sprint-touch');
+sprintEl.addEventListener('touchstart',function(e){e.preventDefault();sprintTouch=true});
+sprintEl.addEventListener('touchend',function(){sprintTouch=false});
+sprintEl.addEventListener('touchcancel',function(){sprintTouch=false});
+
+/* ─── Title screen background animation ─── */
+var titleCv=document.getElementById('title-canvas');
+var titleCtx=titleCv.getContext('2d');
+function drawTitleBg(t){
+  var w=titleCv.width,h=titleCv.height;
+  var img=titleCtx.createImageData(w,h);
+  for(var y=0;y<h;y++){
+    var skyT=y/h;
+    for(var x=0;x<w;x++){
+      var idx=(y*w+x)*4;
+      // Desert gradient
+      var r2=Math.floor(30+180*skyT+Math.sin(x*0.05+t*0.001)*10);
+      var g=Math.floor(20+150*skyT+Math.sin(y*0.03+t*0.0008)*8);
+      var b=Math.floor(15+100*skyT+Math.cos(x*0.04+t*0.0012)*6);
+      img.data[idx]=r2;img.data[idx+1]=g;img.data[idx+2]=b;img.data[idx+3]=255;
+    }
+  }
+  // Sun
+  var sx=w*0.6+Math.sin(t*0.0003)*w*0.15;
+  var sy=h*0.3-Math.sin(t*0.0005)*h*0.1;
+  for(var dy=-15;dy<=15;dy++)for(var dx=-15;dx<=15;dx++){
+    if(dx*dx+dy*dy>225)continue;
+    var px=Math.floor(sx+dx),py=Math.floor(sy+dy);
+    if(px>=0&&px<w&&py>=0&&py<h){
+      var idx=(py*w+px)*4;
+      var d=Math.sqrt(dx*dx+dy*dy)/15;
+      img.data[idx]=255;img.data[idx+1]=Math.floor(200*(1-d)+img.data[idx+1]*d);
+      img.data[idx+2]=Math.floor(80*(1-d)+img.data[idx+2]*d);
+    }
+  }
+  titleCtx.putImageData(img,0,0);
+}
+var titleAnimId;
+function animateTitle(t){drawTitleBg(t);titleAnimId=requestAnimationFrame(animateTitle)}
+
+/* ─── Emscripten + Game Loop ─── */
 var Module={
   onRuntimeInitialized:function(){
     document.getElementById('loading').style.display='none';
     document.getElementById('title').style.display='flex';
+    animateTitle(0);
     Module._init();
 
-    var cv=document.getElementById('c'), ctx=cv.getContext('2d');
+    var cv=document.getElementById('c'),ctx=cv.getContext('2d');
     var img=ctx.createImageData(640,400);
-    var running=false, lastT=0;
+    var running=false,lastT=0,wasDead=false;
 
     document.getElementById('title').onclick=function(){
+      cancelAnimationFrame(titleAnimId);
       document.getElementById('title').style.display='none';
-      running=true; lastT=performance.now();
+      initAudio();
+      running=true;lastT=performance.now();
       requestAnimationFrame(loop);
     };
 
+    document.getElementById('gameover').onclick=function(){
+      document.getElementById('gameover').style.display='none';
+      Module._init(); // restart
+      running=true;lastT=performance.now();
+      requestAnimationFrame(loop);
+    };
+
+    var dirs=['N','NE','E','SE','S','SW','W','NW'];
+
     function loop(t){
       if(!running)return;
-      var dt=Math.min((t-lastT)/1000,0.05); lastT=t;
+      var dt=Math.min((t-lastT)/1000,0.05);lastT=t;
 
-      // Keyboard → input
+      // Input
       kbMX=kbMY=kbT=0;
-      if(keys['w']||keys['W']||keys['ArrowUp'])  kbMY=1;
-      if(keys['s']||keys['S']||keys['ArrowDown']) kbMY=-1;
-      if(keys['a']||keys['A']) kbMX=-1;
-      if(keys['d']||keys['D']) kbMX=1;
-      if(keys['ArrowLeft'])  kbT=-1;
-      if(keys['ArrowRight']) kbT=1;
+      if(keys['w']||keys['W']||keys['ArrowUp'])kbMY=1;
+      if(keys['s']||keys['S']||keys['ArrowDown'])kbMY=-1;
+      if(keys['a']||keys['A'])kbMX=-1;
+      if(keys['d']||keys['D'])kbMX=1;
+      if(keys['ArrowLeft'])kbT=-1;
+      if(keys['ArrowRight'])kbT=1;
 
-      Module._set_input(kbMX+tMX, kbMY+tMY, kbT+tT);
+      var mx=kbMX+tMX, my=kbMY+tMY, turn=kbT+tT;
+      var sprint=keyS||sprintTouch?1.5:1.0;
+      if(sprint>1){mx*=sprint;my*=sprint}
+
+      Module._set_input(mx,my,turn);
       Module._update_game(dt);
       Module._render_game();
 
-      // Blit framebuffer → canvas
+      // Blit
       var fbPtr=Module._get_framebuffer();
       var src=new Uint8Array(Module.HEAPU8.buffer,fbPtr,640*400*4);
       img.data.set(src);
       ctx.putImageData(img,0,0);
 
-      // HUD update
+      // Sound
+      var snd=Module._get_sound();
+      if(snd>0) playSound(snd);
+
+      // HUD
       var th=Module._get_thirst();
       var sc=Module._get_score();
+      var ang=Module._get_angle();
+      var sprinting=Module._get_sprint();
+
       document.getElementById('tv').textContent=Math.round(th)+'%';
       var fill=document.getElementById('tf');
       fill.style.width=th+'%';
-      fill.style.background=th<15?'#e03030':th<35?'#e0a030':'#44aaff';
+      fill.style.background=th<15?'#d03030':th<35?'#d0a030':'#44aaff';
       document.getElementById('sv').textContent=sc;
 
-      // Low-thirst red flash
+      // Compass
+      var di=Math.round(((ang%(Math.PI*2))+Math.PI*2)%(Math.PI*2)/(Math.PI/4))%8;
+      document.getElementById('compass').textContent='🧭 '+dirs[di];
+
+      // Sprint indicator
+      document.getElementById('sprint-indicator').className=sprinting?'show':'';
+
+      // Low thirst flash
       var warn=document.getElementById('warn');
-      if(th<15&&th>0){
-        var pulse=Math.sin(t/200)*0.12+0.12;
-        warn.style.background='rgba(200,30,30,'+pulse+')';
-      } else {
-        warn.style.background='rgba(200,30,30,0)';
+      if(th<20&&th>0){
+        var p=Math.sin(t/180)*0.14+0.14;
+        warn.style.background='rgba(200,25,25,'+p+')';
+      } else {warn.style.background='rgba(200,25,25,0)'}
+
+      // Death check
+      if(th<=0&&!wasDead){wasDead=true;
+        setTimeout(function(){
+          document.getElementById('go-score').textContent=sc;
+          document.getElementById('gameover').style.display='flex';
+          running=false;
+        },600);
       }
+      if(th>0) wasDead=false;
 
       requestAnimationFrame(loop);
     }
   }
 };
+var keyS=false;
+document.addEventListener('keydown',function(e){if(e.key==='Shift')keyS=true});
+document.addEventListener('keyup',function(e){if(e.key==='Shift')keyS=false});
 </script>
 <script src="game.js"></script>
 </body>
