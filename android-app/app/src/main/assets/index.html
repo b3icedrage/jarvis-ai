@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>OASIS — Desert Survival</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -70,11 +70,29 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-
 .spin{width:28px;height:28px;border:3px solid #d4a574;border-top-color:transparent;
   border-radius:50%;animation:sp 1s linear infinite;margin-bottom:10px}
 @keyframes sp{to{transform:rotate(360deg)}}
+
+/* Rotate device overlay */
+#rotate{position:fixed;inset:0;z-index:100;background:#0a0804;display:none;
+  flex-direction:column;align-items:center;justify-content:center;color:#ffe4b5;
+  text-align:center;padding:20px}
+#rotate .icon{font-size:64px;margin-bottom:16px;animation:spin-phone 2s ease-in-out infinite}
+#rotate .msg{font-size:16px;letter-spacing:2px;opacity:.8}
+#rotate .sub{font-size:11px;opacity:.4;margin-top:8px}
+@keyframes spin-phone{0%{transform:rotate(0deg)}50%{transform:rotate(90deg)}100%{transform:rotate(0deg)}}
+@media (orientation:portrait){#rotate{display:flex}}
+@media (orientation:landscape){#rotate{display:none}}
 </style>
 </head>
 <body>
 
 <div id="loading"><div class="spin"></div><div>Entering the desert…</div></div>
+
+<!-- Rotate device overlay -->
+<div id="rotate">
+  <div class="icon">📱↻</div>
+  <div class="msg">ROTATE YOUR PHONE</div>
+  <div class="sub">This game requires landscape mode</div>
+</div>
 
 <!-- Title Screen -->
 <div id="title" style="display:none">
@@ -358,6 +376,11 @@ var Module={
 var keyS=false;
 document.addEventListener('keydown',function(e){if(e.key==='Shift')keyS=true});
 document.addEventListener('keyup',function(e){if(e.key==='Shift')keyS=false});
+
+/* Lock to landscape on mobile */
+if(screen.orientation && screen.orientation.lock){
+  screen.orientation.lock('landscape-primary').catch(function(){});
+}
 </script>
 <script src="game.js"></script>
 </body>
