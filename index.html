@@ -347,7 +347,7 @@ var Module={
 
       // Blit
       var fbPtr=Module._get_framebuffer();
-      var src=new Uint8Array(Module.HEAPU8.buffer,fbPtr,800*450*4);
+      var heap=Module.HEAPU8||HEAPU8; var src=new Uint8Array(heap.buffer,fbPtr,800*450*4);
       img.data.set(src);
       ctx.putImageData(img,0,0);
 
