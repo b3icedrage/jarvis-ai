@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#050510">
 <title>OASIS — The Hub</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -40,24 +43,47 @@ canvas{display:block;width:100%;height:100%}
 #dialog .npc-name{font-size:11px;letter-spacing:3px;color:#ff2aff;margin-bottom:6px;
   text-shadow:0 0 6px rgba(255,42,255,.4)}
 #dialog .npc-text{font-size:12px;color:rgba(255,255,255,.8);line-height:1.7;letter-spacing:1px}
-#dialog .npc-hint{font-size:9px;color:rgba(0,255,255,.4);margin-top:8px;letter-spacing:2px}
+#dialog .npc-hint{font-size:9px;color:rgba(255,255,255,.3);margin-top:8px;letter-spacing:2px}
+#dialog .npc-avatar{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;
+  vertical-align:middle;box-shadow:0 0 6px currentColor}
 
 /* Mobile controls */
-#mobile-controls{position:absolute;bottom:0;left:0;right:0;height:40%;z-index:20;display:none}
-#mc-move{position:absolute;bottom:20px;left:20px;width:120px;height:120px;border-radius:50%;
-  background:rgba(0,255,255,.06);border:2px solid rgba(0,255,255,.15)}
-#mc-knob{width:36px;height:36px;border-radius:50%;position:absolute;
-  background:radial-gradient(circle,rgba(0,255,255,.3),rgba(0,255,255,.1));
-  top:42px;left:42px;pointer-events:none}
-#mc-look{position:absolute;bottom:20px;right:20px;width:120px;height:120px;border-radius:50%;
-  background:rgba(255,42,255,.06);border:2px solid rgba(255,42,255,.15)}
-#mc-look-knob{width:36px;height:36px;border-radius:50%;position:absolute;
-  background:radial-gradient(circle,rgba(255,42,255,.3),rgba(255,42,255,.1));
-  top:42px;left:42px;pointer-events:none}
-#mc-interact{position:absolute;bottom:100px;right:50%;transform:translateX(80px);
-  width:50px;height:50px;border-radius:50%;
-  background:rgba(0,255,255,.1);border:2px solid rgba(0,255,255,.2);
-  display:flex;align-items:center;justify-content:center;color:rgba(0,255,255,.6);font-size:20px}
+#mobile-controls{position:absolute;inset:0;z-index:20;display:none}
+.mc-zone{position:absolute;border-radius:50%;transition:background .15s}
+#mc-move{bottom:24px;left:24px;width:130px;height:130px;
+  background:rgba(0,255,255,.05);border:2px solid rgba(0,255,255,.12)}
+#mc-knob{width:40px;height:40px;border-radius:50%;position:absolute;
+  background:radial-gradient(circle,rgba(0,255,255,.35),rgba(0,255,255,.12));
+  box-shadow:0 0 8px rgba(0,255,255,.15);
+  top:45px;left:45px;pointer-events:none;transition:none}
+#mc-look{bottom:24px;right:24px;width:140px;height:140px;
+  background:rgba(255,42,255,.04);border:2px solid rgba(255,42,255,.10)}
+#mc-look-knob{width:40px;height:40px;border-radius:50%;position:absolute;
+  background:radial-gradient(circle,rgba(255,42,255,.30),rgba(255,42,255,.10));
+  box-shadow:0 0 8px rgba(255,42,255,.12);
+  top:50px;left:50px;pointer-events:none;transition:none}
+#mc-interact{position:absolute;bottom:140px;left:50%;transform:translateX(-50%);
+  width:56px;height:56px;border-radius:50%;
+  background:rgba(0,255,255,.08);border:2px solid rgba(0,255,255,.18);
+  box-shadow:0 0 12px rgba(0,255,255,.1);
+  display:flex;align-items:center;justify-content:center;color:rgba(0,255,255,.5);font-size:22px;
+  opacity:0;transition:opacity .25s}
+#mc-interact.show{opacity:1}
+#mc-dialog-close{position:absolute;bottom:140px;left:50%;transform:translateX(-50%);
+  width:56px;height:56px;border-radius:50%;
+  background:rgba(255,42,255,.1);border:2px solid rgba(255,42,255,.25);
+  box-shadow:0 0 12px rgba(255,42,255,.12);
+  display:none;align-items:center;justify-content:center;color:rgba(255,42,255,.7);font-size:18px;
+  font-weight:bold;letter-spacing:1px}
+.mc-label{position:absolute;font-size:8px;letter-spacing:2px;text-align:center;
+  color:rgba(255,255,255,.2);pointer-events:none}
+#mc-move-label{bottom:158px;left:24px;width:130px}
+#mc-look-label{bottom:158px;right:24px;width:140px}
+#mc-auto-turn{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:60px;height:60px;border-radius:50%;pointer-events:none;z-index:25;
+  border:2px solid rgba(255,42,255,.3);opacity:0;transition:opacity .3s}
+#mc-auto-turn.show{opacity:1;animation:autoTurnPulse 1s ease-in-out infinite}
+@keyframes autoTurnPulse{0%,100%{box-shadow:0 0 10px rgba(255,42,255,.2)}50%{box-shadow:0 0 25px rgba(255,42,255,.4)}}
 
 /* Title */
 #title{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;
@@ -110,9 +136,13 @@ canvas{display:block;width:100%;height:100%}
 </div>
 
 <div id="mobile-controls">
-  <div id="mc-move"><div id="mc-knob"></div></div>
-  <div id="mc-look"><div id="mc-look-knob"></div></div>
+  <div id="mc-move" class="mc-zone"><div id="mc-knob"></div></div>
+  <div id="mc-move-label" class="mc-label">MOVE</div>
+  <div id="mc-look" class="mc-zone"><div id="mc-look-knob"></div></div>
+  <div id="mc-look-label" class="mc-label">LOOK</div>
   <div id="mc-interact">💬</div>
+  <div id="mc-dialog-close">✕</div>
+  <div id="mc-auto-turn"></div>
 </div>
 
 <canvas id="c"></canvas>
@@ -225,56 +255,120 @@ cv.addEventListener('click', function() {
 
 // Mobile controls
 var mcLeft = false, mcRight = false, mcFwd = false, mcBack = false;
-var mcLookX = 0, mcLookY = 0;
-var mcInteract = false;
+var lookDX = 0, lookDY = 0;
+var mcInteract = false, mcDialogClose = false;
 var mcMoveEl = document.getElementById('mc-move'), mcKnob = document.getElementById('mc-knob');
 var mcLookEl = document.getElementById('mc-look'), mcLookKnob = document.getElementById('mc-look-knob');
-var mcMoveTouch = null, mcLookTouch = null;
+var mcMoveTouchId = null, mcLookTouchId = null;
+var mcMoveOriginX = 0, mcMoveOriginY = 0;
+var mcLookOriginX = 0, mcLookOriginY = 0;
+var isMobileDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-function isMobile() { return 'ontouchstart' in window || navigator.maxTouchPoints > 0; }
-if (isMobile()) document.getElementById('mobile-controls').style.display = 'block';
+if (isMobileDevice) {
+    document.getElementById('mobile-controls').style.display = 'block';
+    document.getElementById('crosshair').style.display = 'none';
+}
 
-mcMoveEl.addEventListener('touchstart', function(e) { e.preventDefault(); mcMoveTouch = e.changedTouches[0]; });
+// Helper: get joystick center from bounding rect
+function getJoystickCenter(el) {
+    var r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+}
+
+// Move joystick
+document.getElementById('mobile-controls').addEventListener('touchstart', function(e) {
+    // Find which zone was touched
+    for (var i = 0; i < e.changedTouches.length; i++) {
+        var touch = e.changedTouches[i];
+        var el = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (!el) continue;
+
+        // Move joystick
+        if (el.id === 'mc-move' || el.id === 'mc-knob' || el.closest && el.closest('#mc-move')) {
+            if (mcMoveTouchId !== null) continue;
+            mcMoveTouchId = touch.identifier;
+            var c = getJoystickCenter(mcMoveEl);
+            mcMoveOriginX = c.x; mcMoveOriginY = c.y;
+            e.preventDefault();
+            continue;
+        }
+
+        // Look joystick
+        if (el.id === 'mc-look' || el.id === 'mc-look-knob' || el.closest && el.closest('#mc-look')) {
+            if (mcLookTouchId !== null) continue;
+            mcLookTouchId = touch.identifier;
+            var c = getJoystickCenter(mcLookEl);
+            mcLookOriginX = c.x; mcLookOriginY = c.y;
+            e.preventDefault();
+            continue;
+        }
+    }
+}, { passive: false });
+
 document.addEventListener('touchmove', function(e) {
-    if (mcMoveTouch) {
-        for (var i = 0; i < e.changedTouches.length; i++) {
-            if (e.changedTouches[i].identifier !== mcMoveTouch.identifier) continue;
-            var r = mcMoveEl.getBoundingClientRect(), cx = r.width / 2, cy = r.height / 2;
-            var dx = e.changedTouches[i].clientX - r.left - cx;
-            var dy = e.changedTouches[i].clientY - r.top - cy;
-            var d = Math.sqrt(dx * dx + dy * dy), mx = cx - 18;
-            if (d > mx) { dx = dx / d * mx; dy = dy / d * mx; }
+    for (var i = 0; i < e.changedTouches.length; i++) {
+        var touch = e.changedTouches[i];
+
+        // Move joystick tracking
+        if (touch.identifier === mcMoveTouchId) {
+            e.preventDefault();
+            var dx = touch.clientX - mcMoveOriginX;
+            var dy = touch.clientY - mcMoveOriginY;
+            var d = Math.sqrt(dx * dx + dy * dy);
+            var maxR = 45;
+            if (d > maxR) { dx = dx / d * maxR; dy = dy / d * maxR; }
             mcKnob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
-            mcFwd = dy < -10; mcBack = dy > 10; mcLeft = dx < -10; mcRight = dx > 10;
+            var deadzone = 12;
+            mcFwd = dy < -deadzone; mcBack = dy > deadzone;
+            mcLeft = dx < -deadzone; mcRight = dx > deadzone;
         }
-    }
-    if (mcLookTouch) {
-        for (var i = 0; i < e.changedTouches.length; i++) {
-            if (e.changedTouches[i].identifier !== mcLookTouch.identifier) continue;
-            var r = mcLookEl.getBoundingClientRect(), cx = r.width / 2, cy = r.height / 2;
-            var dx = e.changedTouches[i].clientX - r.left - cx;
-            var dy = e.changedTouches[i].clientY - r.top - cy;
+
+        // Look joystick tracking
+        if (touch.identifier === mcLookTouchId) {
+            e.preventDefault();
+            var dx = touch.clientX - mcLookOriginX;
+            var dy = touch.clientY - mcLookOriginY;
+            var maxR = 50;
+            var d = Math.sqrt(dx * dx + dy * dy);
+            if (d > maxR) { dx = dx / d * maxR; dy = dy / d * maxR; }
             mcLookKnob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
-            lookDX = dx * 0.004; lookDY = dy * 0.004;
+            lookDX = dx / maxR; // -1 to 1
+            lookDY = dy / maxR; // -1 to 1
         }
     }
-});
+}, { passive: false });
+
 function mcEnd(e) {
     for (var i = 0; i < e.changedTouches.length; i++) {
-        if (mcMoveTouch && e.changedTouches[i].identifier === mcMoveTouch.identifier) {
-            mcMoveTouch = null; mcFwd = mcBack = mcLeft = mcRight = false;
+        var touch = e.changedTouches[i];
+        if (touch.identifier === mcMoveTouchId) {
+            mcMoveTouchId = null; mcFwd = mcBack = mcLeft = mcRight = false;
             mcKnob.style.transform = 'translate(0,0)';
         }
-        if (mcLookTouch && e.changedTouches[i].identifier === mcLookTouch.identifier) {
-            mcLookTouch = null; lookDX = lookDY = 0;
+        if (touch.identifier === mcLookTouchId) {
+            mcLookTouchId = null; lookDX = lookDY = 0;
             mcLookKnob.style.transform = 'translate(0,0)';
         }
     }
 }
-document.addEventListener('touchend', mcEnd); document.addEventListener('touchcancel', mcEnd);
-mcLookEl.addEventListener('touchstart', function(e) { e.preventDefault(); mcLookTouch = e.changedTouches[0]; });
-document.getElementById('mc-interact').addEventListener('touchstart', function(e) { e.preventDefault(); mcInteract = true; });
-document.getElementById('mc-interact').addEventListener('touchend', function() { mcInteract = false; });
+document.addEventListener('touchend', mcEnd);
+document.addEventListener('touchcancel', mcEnd);
+
+// Interact button
+document.getElementById('mc-interact').addEventListener('touchstart', function(e) {
+    e.preventDefault(); e.stopPropagation(); mcInteract = true;
+});
+document.getElementById('mc-interact').addEventListener('touchend', function(e) {
+    e.stopPropagation(); mcInteract = false;
+});
+
+// Dialog close button
+document.getElementById('mc-dialog-close').addEventListener('touchstart', function(e) {
+    e.preventDefault(); e.stopPropagation(); mcDialogClose = true;
+});
+document.getElementById('mc-dialog-close').addEventListener('touchend', function(e) {
+    e.stopPropagation(); mcDialogClose = false;
+});
 
 /* ═══════════════════════════════════════════════════════════
    NPC SYSTEM
@@ -853,10 +947,20 @@ function update(dt) {
 
     // Look
     if (!dialogOpen) {
-        if (keys['ArrowLeft'] || lookDX < -0.1) camAngle -= 1.5 * dt;
-        if (keys['ArrowRight'] || lookDX > 0.1) camAngle += 1.5 * dt;
-        camPitch += lookDY * 0.5;
-        camPitch = Math.max(-0.5, Math.min(0.5, camPitch));
+        // Keyboard: arrow keys for turning
+        if (keys['ArrowLeft']) camAngle -= 1.5 * dt;
+        if (keys['ArrowRight']) camAngle += 1.5 * dt;
+
+        // Touch joystick: continuous look based on displacement
+        if (mcLookTouchId !== null) {
+            camAngle += lookDX * 2.5 * dt;
+            camPitch += lookDY * 1.5 * dt;
+            camPitch = Math.max(-0.5, Math.min(0.5, camPitch));
+        }
+        // Keyboard: also allow mouse look when pointer is locked (desktop)
+        if (pointerLocked) {
+            // Handled by mousemove event
+        }
     }
 
     // Move
@@ -892,30 +996,66 @@ function update(dt) {
 
     // Interact
     var doInteract = (keys['e'] || keys['E']) || mcInteract;
-    if (doInteract) {
-        if (dialogOpen) {
-            dialogOpen = false;
-            dialogNPC = null;
-            document.getElementById('dialog').classList.remove('show');
-            document.getElementById('interact-hint').classList.remove('show');
-            sfx('close');
-        } else if (interactTarget) {
-            dialogOpen = true;
-            dialogNPC = interactTarget;
-            dialogNPC.lineIdx = 0;
-            document.getElementById('dialog-name').textContent = dialogNPC.name;
-            document.getElementById('dialog-text').textContent = dialogNPC.lines[0];
-            document.getElementById('dialog').classList.add('show');
-            sfx('interact');
+    var doCloseDialog = mcDialogClose || (keys['Escape']) || (keys['e'] || keys['E']);
+    if (doCloseDialog && dialogOpen) {
+        dialogOpen = false;
+        dialogNPC = null;
+        document.getElementById('dialog').classList.remove('show');
+        document.getElementById('mc-dialog-close').style.display = 'none';
+        document.getElementById('mc-interact').classList.remove('show');
+        document.getElementById('interact-hint').classList.remove('show');
+        sfx('close');
+        keys['e'] = false; keys['E'] = false; keys['Escape'] = false;
+        mcDialogClose = false; mcInteract = false;
+    } else if (doInteract && interactTarget && !dialogOpen) {
+        dialogOpen = true;
+        dialogNPC = interactTarget;
+        dialogNPC.lineIdx = 0;
+        document.getElementById('dialog-name').textContent = dialogNPC.name;
+        document.getElementById('dialog-text').textContent = dialogNPC.lines[0];
+        document.getElementById('dialog').classList.add('show');
+        if (isMobileDevice) {
+            document.getElementById('mc-dialog-close').style.display = 'flex';
+            document.getElementById('mc-interact').classList.remove('show');
         }
+        sfx('interact');
+        keys['e'] = false; keys['E'] = false;
+        mcInteract = false;
+    } else {
         keys['e'] = false; keys['E'] = false;
         mcInteract = false;
     }
 
+    // Mobile: auto-turn toward nearest NPC when within range
+    if (isMobileDevice && !dialogOpen && !mcLookTouchId && mcMoveTouchId !== null) {
+        var nearestNPC = null, nearDist = 6;
+        for (var ni = 0; ni < npcs.length; ni++) {
+            var ndx = npcs[ni].x - camX, ndz = npcs[ni].z - camZ;
+            var nd = Math.sqrt(ndx * ndx + ndz * ndz);
+            if (nd < nearDist) { nearDist = nd; nearestNPC = npcs[ni]; }
+        }
+        if (nearestNPC) {
+            var targetAngle = Math.atan2(nearestNPC.x - camX, nearestNPC.z - camZ);
+            var angleDiff = targetAngle - camAngle;
+            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+            if (Math.abs(angleDiff) > 0.15) {
+                camAngle += angleDiff * 3 * dt;
+            }
+        }
+    }
+
     // Interact hint
     var hint = document.getElementById('interact-hint');
-    if (interactTarget && !dialogOpen) { hint.classList.add('show'); hint.textContent = '[ E ] TALK TO ' + interactTarget.name; }
-    else { hint.classList.remove('show'); }
+    var mcInteractBtn = document.getElementById('mc-interact');
+    if (interactTarget && !dialogOpen) {
+        hint.classList.add('show');
+        hint.textContent = isMobileDevice ? '💬 TAP TO TALK' : '[ E ] TALK TO ' + interactTarget.name;
+        if (isMobileDevice) mcInteractBtn.classList.add('show');
+    } else {
+        hint.classList.remove('show');
+        if (isMobileDevice && !dialogOpen) mcInteractBtn.classList.remove('show');
+    }
 
     // Ambient particles
     if (frameCount % 10 === 0) {
