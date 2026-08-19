@@ -83,8 +83,9 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-
     <h1>🏜️ OASIS</h1>
     <div class="sub">A DESERT SURVIVAL GAME</div>
     <div class="inst">
-      You wake in a lone house in an endless desert.<br>
-      Your water is draining — find the blue oases to survive.<br><br>
+      You wake in a lone house in a vast, empty desert.<br>
+      Your water is draining — find the shimmering blue oases to survive.<br>
+      The desert is flat and brown, with nothing but water to save you.<br><br>
       <b>📱 Mobile:</b> Left joystick · Right arrows to turn<br>
       <b>⌨️ Keyboard:</b> WASD to move · ← → to turn<br>
       <b>🏃 Sprint:</b> Hold SHIFT or tap sprint button
@@ -221,7 +222,6 @@ function drawTitleBg(t){
     var skyT=y/h;
     for(var x=0;x<w;x++){
       var idx=(y*w+x)*4;
-      // Desert gradient
       var r2=Math.floor(30+180*skyT+Math.sin(x*0.05+t*0.001)*10);
       var g=Math.floor(20+150*skyT+Math.sin(y*0.03+t*0.0008)*8);
       var b=Math.floor(15+100*skyT+Math.cos(x*0.04+t*0.0012)*6);
