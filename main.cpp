@@ -69,7 +69,28 @@ static Part parts[MAXP];
 static int thirdPerson = 0; // 0=first person, 1=third person
 static double camX, camY; // camera position (offset from player in 3rd person)
 
-// Sound: multi-signal (JS polls, gets packed flags)
+// Collectibles
+struct Item { double x,y; uint8_t type; int active; };
+static Item itemList[40]; static int numItems=0;
+
+// Stars
+struct Star { float x,y,brightness,twinklePhase; };
+static Star starList[120]; static int numStars=0;
+
+// Sandstorm
+static double sandstormIntensity=0.0;
+static double sandstormTimer=30.0;
+static int    sandstormActive=0;
+
+// Minimap fog of war
+static uint8_t fogMap[MAP][MAP];
+
+// Score combo
+static int comboCount=0;
+static double comboTimer=0.0;
+static int bestCombo=0;
+
+// Sound
 static int soundSignal = 0;
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -192,6 +213,36 @@ static void genWorld() {
         if(numOases<30){oasisList[numOases].x=ox+1.0;oasisList[numOases].y=oy+1.0;numOases++;}}
 
     pX=hx+5.5;pY=hy+8.0;pA=-M_PI/2;thirst=100;score=0;gTime=0;bobPhase=0;
+    comboCount=0;comboTimer=0;bestCombo=0;sandstormTimer=25.0;sandstormActive=0;sandstormIntensity=0;
+
+    // Generate stars
+    numStars=0;
+    for(int i=0;i<120&&numStars<120;i++){
+        starList[numStars].x=(float)((rand()%1000)/1000.0*SW);
+        starList[numStars].y=(float)((rand()%200)/200.0*(SH*0.4));
+        starList[numStars].brightness=0.3f+(float)(rand()%700)/1000.0f;
+        starList[numStars].twinklePhase=(float)(rand()%628)/100.0f;
+        numStars++;
+    }
+
+    // Scatter collectible items
+    numItems=0;
+    // type: 0=water_bottle, 1=compass, 2=flower, 3=gold
+    for(int i=0;i<30&&numItems<40;i++){
+        double ix=10.0+(rand()%(MAP-20));
+        double iy=10.0+(rand()%(MAP-20));
+        if(abs((int)ix-MAP/2)<8&&abs((int)iy-MAP/2)<8)continue;
+        if(wmap[(int)ix][(int)iy]!=T_Empty)continue;
+        uint8_t itype=(uint8_t)(rand()%4);
+        itemList[numItems].x=ix;itemList[numItems].y=iy;
+        itemList[numItems].type=itype;itemList[numItems].active=1;
+        numItems++;
+    }
+
+    // Init fog of war (all unexplored except house)
+    memset(fogMap,0,sizeof(fogMap));
+    for(int fy=hy-1;fy<=hy+11;fy++)for(int fx=hx-1;fx<=hx+11;fx++)
+        if(fx>=0&&fx<MAP&&fy>=0&&fy<MAP)fogMap[fx][fy]=1;
 
     for(int i=0;i<MAXP;i++){parts[i]={0};parts[i].life=0;}
 }
@@ -320,6 +371,20 @@ static void renderFrame() {
                 if(sunDist<sunR){double sf=1-sunDist/sunR;sf*=sf;sr=(uint8_t)clampd(lerp(sr,255,sf),0,255);sg=(uint8_t)clampd(lerp(sg,240,sf),0,255);sb=(uint8_t)clampd(lerp(sb,180,sf),0,255);}
                 fb[y*SW+x]=rgb(sr,sg,sb);
             }
+            // Stars at night (when bright < 0.7)
+            if(bright<0.7){
+                float nightness=(float)(1.0-bright/0.7);
+                for(int si=0;si<numStars;si++){
+                    int stx=(int)starList[si].x,sty=(int)(starList[si].y*SH/180);
+                    if(sty<0||sty>=cT)continue;
+                    float tw=sin(starList[si].twinklePhase+gTime*1.5)*0.3f+0.7f;
+                    float alpha=starList[si].brightness*tw*nightness;
+                    if(stx==x){
+                        uint8_t sa=(uint8_t)(alpha*255);
+                        fb[sty*SW+x]=blendPixel(fb[sty*SW+x],rgb(255,255,220,sa));
+                    }
+                }
+            }
         }
 
         // Walls
@@ -379,6 +444,42 @@ static void renderFrame() {
                 uint32_t ex_=fb[screenY*SW+screenX];uint8_t er=ex_&0xFF,eg=(ex_>>8)&0xFF,eb=(ex_>>16)&0xFF;
                 double bl=ef*0.85;
                 fb[screenY*SW+screenX]=fogC(rgb((uint8_t)(er+(wr-er)*bl),(uint8_t)(eg+(wg-eg)*bl),(uint8_t)(eb+(wb-eb)*bl)),dist);
+            }
+        }
+    }
+
+    // ── Collectible items (floor decals) ──
+    for(int ii=0;ii<numItems;ii++){
+        if(!itemList[ii].active)continue;
+        double ix=itemList[ii].x-camX, iy=itemList[ii].y-camY;
+        double dirX=cos(pA),dirY=sin(pA),plX=-sin(pA)*tanHalf,plY=cos(pA)*tanHalf;
+        double invDet=1/(plX*dirY-dirX*plY);
+        double tX_=invDet*(dirY*ix-dirX*iy),tY_=invDet*(-plY*ix+plX*iy);
+        if(tY_<=0.3)continue;
+        int scrX=(int)(SW/2.0*(1+tX_/tY_));
+        double dist=sqrt(ix*ix+iy*iy);
+        int sz=maxI(1,(int)(12.0/tY_));
+        // Item colors by type: 0=water(blue), 1=compass(yellow), 2=flower(pink), 3=gold
+        uint32_t icols[]={rgb(60,140,220),rgb(220,200,40),rgb(220,80,160),rgb(255,200,40)};
+        uint32_t iglow[]={rgb(30,80,180),rgb(180,160,20),rgb(180,40,120),rgb(200,160,20)};
+        uint32_t col=icols[itemList[ii].type];
+        uint32_t glow=iglow[itemList[ii].type];
+        // Pulsing glow
+        double pulse=sin(gTime*3.0+ii*1.5)*0.3+0.7;
+        for(int dy_=-sz;dy_<=sz;dy_++){
+            int screenY=SH/2-bob+(int)(sz*0.3)+dy_;
+            if(screenY<0||screenY>=SH)continue;
+            for(int dx_=-sz;dx_<=sz;dx_++){
+                int screenX=scrX+dx_;
+                if(screenX<0||screenX>=SW)continue;
+                double d=sqrt((double)(dx_*dx_+dy_*dy_));
+                if(d>sz)continue;
+                if(tY_>=zbuf[screenX])continue;
+                float alpha=(float)(pulse*(1.0-d/sz));
+                uint8_t a=(uint8_t)(alpha*200);
+                uint32_t c=d<sz*0.5?col:glow;
+                fb[screenY*SW+screenX]=blendPixel(fb[screenY*SW+screenX],
+                    rgb((uint8_t)((c&0xFF)*pulse),((c>>8)&0xFF)*pulse,((c>>16)&0xFF)*pulse,a));
             }
         }
     }
@@ -475,15 +576,56 @@ static void renderFrame() {
         }
     }
 
-    // ── Minimap ──
+    // ── Sandstorm overlay ──
+    if(sandstormActive&&sandstormIntensity>0.05){
+        for(int y=0;y<SH;y+=2){
+            for(int x=0;x<SW;x+=2){
+                double noise=(double)(h8(x+(int)(gTime*50),y+(int)(gTime*30)))/255.0;
+                double edgeFade=1.0-(double)y/SH*0.3;
+                double a=noise*sandstormIntensity*0.4*edgeFade;
+                uint8_t alpha=(uint8_t)(a*255);
+                if(alpha>5){
+                    uint32_t bg=fb[y*SW+x];
+                    fb[y*SW+x]=blendPixel(bg,rgb(210,180,130,alpha));
+                    fb[y*SW+x+1]=blendPixel(fb[y*SW+x+1],rgb(210,180,130,alpha));
+                    fb[(y+1)*SW+x]=blendPixel(fb[(y+1)*SW+x],rgb(210,180,130,alpha));
+                    fb[(y+1)*SW+x+1]=blendPixel(fb[(y+1)*SW+x+1],rgb(210,180,130,alpha));
+                }
+            }
+        }
+        // Horizontal wind streaks
+        for(int i=0;i<(int)(sandstormIntensity*20);i++){
+            int sy=(int)(gTime*80+i*37)%SH;
+            int sx=(int)(gTime*200+i*73)%SW;
+            int len=10+(int)(sandstormIntensity*30);
+            for(int lx=0;lx<len&&sx+lx<SW;lx++){
+                double fade=1.0-(double)lx/len;
+                uint8_t a=(uint8_t)(fade*sandstormIntensity*120);
+                fb[sy*SW+sx+lx]=blendPixel(fb[sy*SW+sx+lx],rgb(200,175,125,a));
+            }
+        }
+    }
+
+    // ── Minimap with fog of war ──
     int mmS=130,mmT=16,mmX0=SW-mmS-8,mmY0=8;
     double mmSc=(double)mmS/mmT;
     for(int y=0;y<mmS;y++)for(int xx=0;xx<mmS;xx++)fb[(mmY0+y)*SW+mmX0+xx]=rgb(20,16,10,180);
     for(int y=0;y<mmS;y++)for(int xx=0;xx<mmS;xx++){
         int wx=(int)(pX-mmT/2.0+xx/mmSc),wy=(int)(pY-mmT/2.0+y/mmSc);
         if(wx<0||wx>=MAP||wy<0||wy>=MAP)continue;
+        // Fog of war: only show explored tiles
+        if(!fogMap[wx][wy]){
+            // Dim unexplored area
+            double edgeDist=fmax(abs(wx-(int)pX),abs(wy-(int)pY));
+            if(edgeDist>4)continue; // fully hidden
+        }
         uint32_t c;
         switch(wmap[wx][wy]){case T_Empty:c=rgb(190,165,125);break;case T_Wall:c=rgb(185,165,130);break;case T_Floor:c=rgb(150,138,118);break;case T_Door:c=doorOpen>0.5?rgb(160,130,80):rgb(100,72,35);break;case T_Water:c=rgb(40,110,200);break;case T_Furn:c=rgb(110,80,40);break;default:c=rgb(180,160,120);}
+        // Fog dimming for recently revealed
+        if(fogMap[wx][wy]&&fmax(abs(wx-(int)pX),abs(wy-(int)pY))>4){
+            uint8_t r=c&0xFF,g=(c>>8)&0xFF,b=(c>>16)&0xFF;
+            c=rgb((uint8_t)(r*0.4),(uint8_t)(g*0.4),(uint8_t)(b*0.4));
+        }
         fb[(mmY0+y)*SW+mmX0+xx]=c;
     }
     int pdx=mmS/2,pdy=mmS/2;
@@ -545,6 +687,54 @@ static void updateGame(double dt) {
     if(thirst>0&&thirst<20&&fmod(gTime,1.5)<dt)soundSignal|=4; // warning
     if(thirst>0&&thirst<20&&fmod(gTime,0.8)<dt)soundSignal|=8; // heartbeat
 
+    // Collectible items
+    for(int ii=0;ii<numItems;ii++){
+        if(!itemList[ii].active)continue;
+        double dx_=pX-itemList[ii].x, dy_=pY-itemList[ii].y;
+        if(dx_*dx_+dy_*dy_<1.5){
+            itemList[ii].active=0;
+            score+=5+itemList[ii].type*2; // gold=11, flower=9, compass=7, water=5
+            comboCount++;
+            comboTimer=3.0;
+            if(comboCount>bestCombo)bestCombo=comboCount;
+            // Type-specific effects
+            switch(itemList[ii].type){
+                case 0: thirst=clampd(thirst+25,0,100); soundSignal|=2; break; // water bottle
+                case 3: shakeAmount=2.0; soundSignal|=6; break; // gold sparkle
+                default: soundSignal|=6; break;
+            }
+            // Burst particles
+            for(int k=0;k<8;k++){
+                int idx=nextParticle(); if(idx<0)break;
+                double a_=(double)(rand()%628)/100.0;
+                parts[idx]={0};
+                parts[idx].x=(float)itemList[ii].x;parts[idx].y=(float)itemList[ii].y;
+                parts[idx].vx=(float)(cos(a_)*1.5);parts[idx].vy=(float)(sin(a_)*1.5);
+                parts[idx].life=20+(float)(rand()%15);parts[idx].maxLife=parts[idx].life;
+                parts[idx].col=rgb(255,220,60);parts[idx].type=1;
+            }
+        }
+    }
+    // Combo decay
+    if(comboTimer>0){comboTimer-=dt;if(comboTimer<=0)comboCount=0;}
+
+    // Sandstorm
+    sandstormTimer-=dt;
+    if(sandstormTimer<=0&&!sandstormActive){sandstormActive=1;sandstormIntensity=0;soundSignal|=7;}
+    if(sandstormActive){
+        sandstormIntensity+=dt*0.15; // ramp up
+        if(sandstormIntensity>1.0)sandstormIntensity=1.0;
+        thirst-=1.5*dt*sandstormIntensity; // drain extra water
+        if(sandstormTimer<-20.0){sandstormActive=0;sandstormIntensity=0;sandstormTimer=30.0+(double)(rand()%20);}
+    }
+    if(!sandstormActive&&sandstormTimer<-20.0)sandstormTimer=30.0+(double)(rand()%20);
+
+    // Fog of war — reveal tiles around player
+    int revealR=6;
+    for(int fy=(int)pY-revealR;fy<=(int)pY+revealR;fy++)
+        for(int fx=(int)pX-revealR;fx<=(int)pX+revealR;fx++)
+            if(fx>=0&&fx<MAP&&fy>=0&&fy<MAP)fogMap[fx][fy]=1;
+
     // Death
     if(thirst<=0){
         soundSignal|=3;
@@ -604,6 +794,8 @@ extern "C" {
     EMSCRIPTEN_KEEPALIVE int     get_sprint()   { return sprinting; }
     EMSCRIPTEN_KEEPALIVE int     get_third_person() { return thirdPerson; }
     EMSCRIPTEN_KEEPALIVE void    toggle_third_person() { thirdPerson = 1 - thirdPerson; }
+    EMSCRIPTEN_KEEPALIVE int     get_combo()    { return comboCount; }
+    EMSCRIPTEN_KEEPALIVE int     get_sandstorm(){ return sandstormActive; }
     EMSCRIPTEN_KEEPALIVE void    set_input(float mx, float my, float t) { iMX=mx; iMY=my; iTurn=t; }
 }
 int main(){return 0;}

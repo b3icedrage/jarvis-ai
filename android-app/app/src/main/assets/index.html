@@ -106,7 +106,8 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-
       The desert is flat and brown, with nothing but water to save you.<br><br>
       <b>📱 Mobile:</b> Left joystick · Right arrows to turn<br>
       <b>⌨️ Keyboard:</b> WASD to move · ← → to turn<br>
-      <b>🏃 Sprint:</b> Hold SHIFT or tap sprint button
+      <b>🏃 Sprint:</b> Hold SHIFT or tap sprint button<br>
+      <b>📷 Camera:</b> Press V or tap 📷 to toggle 3rd person
     </div>
     <div class="start">[ TAP TO BEGIN ]</div>
   </div>
@@ -129,6 +130,8 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-
     <div class="bar-bg"><div class="bar-fill" id="tf" style="width:100%;background:#44aaff"></div></div>
     <div style="font-size:10px" id="tv">100%</div>
     <div style="margin-top:3px">⭐ <span id="sv">0</span> <span class="dim">oases</span></div>
+    <div id="combo" style="margin-top:2px;font-size:10px;color:#ffb347;display:none">🔥 x<span id="combo-v">0</span></div>
+    <div id="sandstorm-warn" style="margin-top:2px;font-size:9px;color:#e8a040;display:none">🌪️ SANDSTORM</div>
     <div id="compass" class="dim" style="margin-top:2px;font-size:10px"></div>
   </div>
   <div id="sprint-indicator">🏃 SPRINTING</div>
@@ -136,6 +139,7 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-
   <div class="touch arrow" id="al">◀</div>
   <div class="touch arrow" id="ar">▶</div>
   <div class="touch sprint-btn" id="sprint-touch">🏃</div>
+  <div class="touch" id="cam-toggle" style="width:44px;height:44px;bottom:90px;right:110px;font-size:10px;display:flex;align-items:center;justify-content:center;color:rgba(255,228,181,.5)">📷</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
@@ -192,6 +196,22 @@ function playSound(type) {
                 gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
                 osc.start(t); osc.stop(t + 0.3);
                 break;
+            case 6: // Collect item — quick sparkle
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, t);
+                osc.frequency.exponentialRampToValueAtTime(1800, t + 0.15);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+                osc.start(t); osc.stop(t + 0.2);
+                break;
+            case 7: // Sandstorm wind — noise burst
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(60, t);
+                osc.frequency.linearRampToValueAtTime(120, t + 0.3);
+                gain.gain.setValueAtTime(0.04, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+                osc.start(t); osc.stop(t + 0.4);
+                break;
         }
     } catch(e) {}
 }
@@ -238,6 +258,8 @@ var sprintEl=document.getElementById('sprint-touch');
 sprintEl.addEventListener('touchstart',function(e){e.preventDefault();sprintTouch=true});
 sprintEl.addEventListener('touchend',function(){sprintTouch=false});
 sprintEl.addEventListener('touchcancel',function(){sprintTouch=false});
+
+document.getElementById('cam-toggle').addEventListener('touchstart',function(e){e.preventDefault();Module._toggle_third_person()});
 
 /* ─── Title screen background animation ─── */
 var titleCv=document.getElementById('title-canvas');
@@ -338,12 +360,23 @@ var Module={
       var sc=Module._get_score();
       var ang=Module._get_angle();
       var sprinting=Module._get_sprint();
+      var combo=Module._get_combo();
+      var sandstorm=Module._get_sandstorm();
 
       document.getElementById('tv').textContent=Math.round(th)+'%';
       var fill=document.getElementById('tf');
       fill.style.width=th+'%';
       fill.style.background=th<15?'#d03030':th<35?'#d0a030':'#44aaff';
       document.getElementById('sv').textContent=sc;
+
+      // Combo
+      var comboEl=document.getElementById('combo');
+      if(combo>1){comboEl.style.display='block';document.getElementById('combo-v').textContent=combo;}
+      else{comboEl.style.display='none';}
+
+      // Sandstorm warning
+      var ssEl=document.getElementById('sandstorm-warn');
+      if(sandstorm){ssEl.style.display='block';}else{ssEl.style.display='none';}
 
       // Compass
       var di=Math.round(((ang%(Math.PI*2))+Math.PI*2)%(Math.PI*2)/(Math.PI/4))%8;
@@ -376,6 +409,9 @@ var Module={
 var keyS=false;
 document.addEventListener('keydown',function(e){if(e.key==='Shift')keyS=true});
 document.addEventListener('keyup',function(e){if(e.key==='Shift')keyS=false});
+
+/* Camera toggle (V key) */
+document.addEventListener('keydown',function(e){if(e.key==='v'||e.key==='V')Module._toggle_third_person()});
 
 /* Lock to landscape on mobile */
 if(screen.orientation && screen.orientation.lock){

@@ -130,6 +130,8 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-
     <div class="bar-bg"><div class="bar-fill" id="tf" style="width:100%;background:#44aaff"></div></div>
     <div style="font-size:10px" id="tv">100%</div>
     <div style="margin-top:3px">⭐ <span id="sv">0</span> <span class="dim">oases</span></div>
+    <div id="combo" style="margin-top:2px;font-size:10px;color:#ffb347;display:none">🔥 x<span id="combo-v">0</span></div>
+    <div id="sandstorm-warn" style="margin-top:2px;font-size:9px;color:#e8a040;display:none">🌪️ SANDSTORM</div>
     <div id="compass" class="dim" style="margin-top:2px;font-size:10px"></div>
   </div>
   <div id="sprint-indicator">🏃 SPRINTING</div>
@@ -193,6 +195,22 @@ function playSound(type) {
                 gain.gain.setValueAtTime(0.06, t);
                 gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
                 osc.start(t); osc.stop(t + 0.3);
+                break;
+            case 6: // Collect item — quick sparkle
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, t);
+                osc.frequency.exponentialRampToValueAtTime(1800, t + 0.15);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+                osc.start(t); osc.stop(t + 0.2);
+                break;
+            case 7: // Sandstorm wind — noise burst
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(60, t);
+                osc.frequency.linearRampToValueAtTime(120, t + 0.3);
+                gain.gain.setValueAtTime(0.04, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+                osc.start(t); osc.stop(t + 0.4);
                 break;
         }
     } catch(e) {}
@@ -342,12 +360,23 @@ var Module={
       var sc=Module._get_score();
       var ang=Module._get_angle();
       var sprinting=Module._get_sprint();
+      var combo=Module._get_combo();
+      var sandstorm=Module._get_sandstorm();
 
       document.getElementById('tv').textContent=Math.round(th)+'%';
       var fill=document.getElementById('tf');
       fill.style.width=th+'%';
       fill.style.background=th<15?'#d03030':th<35?'#d0a030':'#44aaff';
       document.getElementById('sv').textContent=sc;
+
+      // Combo
+      var comboEl=document.getElementById('combo');
+      if(combo>1){comboEl.style.display='block';document.getElementById('combo-v').textContent=combo;}
+      else{comboEl.style.display='none';}
+
+      // Sandstorm warning
+      var ssEl=document.getElementById('sandstorm-warn');
+      if(sandstorm){ssEl.style.display='block';}else{ssEl.style.display='none';}
 
       // Compass
       var di=Math.round(((ang%(Math.PI*2))+Math.PI*2)%(Math.PI*2)/(Math.PI/4))%8;
