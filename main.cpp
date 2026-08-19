@@ -366,9 +366,60 @@ static void renderFrame() {
                 uint8_t sr=(uint8_t)clampd(lerp(45,220,ts)*bright,0,255);
                 uint8_t sg=(uint8_t)clampd(lerp(70,195,ts)*bright,0,255);
                 uint8_t sb=(uint8_t)clampd(lerp(140,165,ts)*bright,0,255);
+                // Horizon warm glow (sunset/sunrise band)
+                double hzDist=fabs(t-0.35);
+                if(hzDist<0.15){double hz=1.0-hzDist/0.15;hz*=hz;
+                    uint8_t hzR=(uint8_t)clampd(sr+80*hz,0,255);
+                    uint8_t hzG=(uint8_t)clampd(sg+40*hz*bright,0,255);
+                    uint8_t hzB=(uint8_t)clampd(sb-20*hz,0,255);
+                    sr=hzR;sg=hzG;sb=hzB;}
+                // Sun disc + glow + lens flare
                 double dsx=x-sunSX,dsy=y-sunSY,sunDist=sqrt(dsx*dsx+dsy*dsy);
-                if(sunDist<sunR*4){double g_=1-sunDist/(sunR*4);g_*=g_;sr=(uint8_t)clampd(sr+255*g_*bright,0,255);sg=(uint8_t)clampd(sg+200*g_*bright,0,255);sb=(uint8_t)clampd(sb+100*g_*bright,0,255);}
-                if(sunDist<sunR){double sf=1-sunDist/sunR;sf*=sf;sr=(uint8_t)clampd(lerp(sr,255,sf),0,255);sg=(uint8_t)clampd(lerp(sg,240,sf),0,255);sb=(uint8_t)clampd(lerp(sb,180,sf),0,255);}
+                // Outer glow halo (wide, soft)
+                if(sunDist<sunR*5){double g_=1-sunDist/(sunR*5);g_*=g_*g_;sr=(uint8_t)clampd(sr+200*g_*bright,0,255);sg=(uint8_t)clampd(sg+160*g_*bright,0,255);sb=(uint8_t)clampd(sb+80*g_*bright,0,255);}
+                // Inner glow
+                if(sunDist<sunR*2.5){double g_=1-sunDist/(sunR*2.5);g_*=g_;sr=(uint8_t)clampd(sr+255*g_*bright,0,255);sg=(uint8_t)clampd(sg+220*g_*bright,0,255);sb=(uint8_t)clampd(sb+120*g_*bright,0,255);}
+                // Sun disc
+                if(sunDist<sunR){double sf=1-sunDist/sunR;sf*=sf;sr=(uint8_t)clampd(lerp(sr,255,sf),0,255);sg=(uint8_t)clampd(lerp(sg,250,sf),0,255);sb=(uint8_t)clampd(lerp(sb,200,sf),0,255);}
+                // Lens flare streaks (horizontal + vertical + diagonal)
+                double flareAngle=atan2(dsy,dsx);
+                double flareDist=sunDist/(sunR*6);
+                if(flareDist<1.0&&flareDist>0.1){
+                    double hStreak=fabs(cos(flareAngle));double vStreak=fabs(sin(flareAngle));
+                    double streak=hStreak*0.6+vStreak*0.4;
+                    double flareBright=(1.0-flareDist)*streak*0.3*bright;
+                    if(flareBright>0.01){sr=(uint8_t)clampd(sr+180*flareBright,0,255);sg=(uint8_t)clampd(sg+150*flareBright,0,255);sb=(uint8_t)clampd(sb+80*flareBright,0,255);}
+                }
+                // Procedural clouds (FBM-like noise)
+                {
+                    double cloudX=(double)x*0.008+gTime*0.012;
+                    double cloudY=(double)y*0.012;
+                    double cn=0;
+                    cn+=sin(cloudX*3.1+cloudY*1.7)*0.5;
+                    cn+=sin(cloudX*5.3-cloudY*2.9+1.3)*0.25;
+                    cn+=sin(cloudX*8.7+cloudY*4.1+3.7)*0.125;
+                    cn+=sin(cloudX*13.1-cloudY*6.3+7.1)*0.0625;
+                    cn=(cn+0.5)*0.8;
+                    double cloudMask=clampd((cn-0.35)*4.0,0.0,1.0);
+                    double cloudBright=clampd(0.6+bright*0.5,0.5,1.0);
+                    uint8_t cr=(uint8_t)clampd(sr+(220*cloudBright-sr)*cloudMask*0.5,0,255);
+                    uint8_t cg=(uint8_t)clampd(sg+(210*cloudBright-sg)*cloudMask*0.5,0,255);
+                    uint8_t cb=(uint8_t)clampd(sb+(200*cloudBright-sb)*cloudMask*0.5,0,255);
+                    sr=cr;sg=cg;sb=cb;
+                }
+                // Mountain silhouette on horizon
+                {
+                    double mtnX=(double)x*0.015;
+                    double mtnH=12+18*sin(mtnX*0.7)+8*sin(mtnX*2.3)+4*sin(mtnX*5.1);
+                    int mtnTop=(int)(cT*0.6-mtnH);
+                    if(y>cT*0.55&&y<cT*0.65&&y>cT-mtnH/15.0*3.0){
+                        double mtnFade=clampd((double)(y-(int)(cT*0.55))/(mtnH/5.0),0,1);
+                        double mtnDark=0.25-mtnFade*0.15;
+                        sr=(uint8_t)clampd(sr*mtnDark,0,255);
+                        sg=(uint8_t)clampd(sg*mtnDark,0,255);
+                        sb=(uint8_t)clampd(sb*(mtnDark+0.02),0,255);
+                    }
+                }
                 fb[y*SW+x]=rgb(sr,sg,sb);
             }
             // Stars at night (when bright < 0.7)
@@ -396,8 +447,11 @@ static void renderFrame() {
                 uint8_t r=tc&0xFF,g=(tc>>8)&0xFF,b=(tc>>16)&0xFF;
                 double sm=side?0.72:1.0, ht=(double)(y-dT)/lh, hm=0.75+0.25*(1-ht), ao=1;
                 if(ht>0.85)ao=1-(ht-0.85)*3;
-                if(tile==T_Door&&doorOpen>0.05){double a=1-doorOpen;if(a<0.05)a=0.05;r=(uint8_t)(r*a*sm*hm*ao*bright);g=(uint8_t)(g*a*sm*hm*ao*bright);b=(uint8_t)(b*a*sm*hm*ao*bright);}
-                else{double lm=sm*hm*ao*bright;r=(uint8_t)clampd(r*lm,0,255);g=(uint8_t)clampd(g*lm,0,255);b=(uint8_t)clampd(b*lm,0,255);}
+                // Specular highlight (view-dependent shine)
+                double specAngle=fabs(sin(rayA-pA*2.0+wallX*0.5));
+                double spec=pow(specAngle,16.0)*0.25*bright;
+                if(tile==T_Door&&doorOpen>0.05){double a=1-doorOpen;if(a<0.05)a=0.05;r=(uint8_t)clampd((r*sm*hm*ao*bright*a)+spec*180,0,255);g=(uint8_t)clampd((g*sm*hm*ao*bright*a)+spec*160,0,255);b=(uint8_t)clampd((b*sm*hm*ao*bright*a)+spec*120,0,255);}
+                else{double lm=sm*hm*ao*bright;r=(uint8_t)clampd(r*lm+spec*180,0,255);g=(uint8_t)clampd(g*lm+spec*160,0,255);b=(uint8_t)clampd(b*lm+spec*120,0,255);}
                 fb[y*SW+x]=fogC(rgb(r,g,b),pd);
             }
         }
@@ -723,6 +777,34 @@ static void renderFrame() {
     for(int dy=-2;dy<=2;dy++)for(int dx=-2;dx<=2;dx++)if(dx*dx+dy*dy<=4)fb[(mmY0+pdy+dy)*SW+mmX0+pdx+dx]=rgb(255,60,60);
     for(int i=3;i<12;i++){int lx=pdx+(int)(cos(pA)*i),ly=pdy+(int)(sin(pA)*i);if(lx>=0&&lx<mmS&&ly>=0&&ly<mmS)fb[(mmY0+ly)*SW+mmX0+lx]=rgb(255,220,60);}
     for(int i=0;i<mmS;i++){fb[mmY0*SW+mmX0+i]=rgb(90,72,45);fb[(mmY0+mmS-1)*SW+mmX0+i]=rgb(90,72,45);fb[(mmY0+i)*SW+mmX0]=rgb(90,72,45);fb[(mmY0+i)*SW+mmX0+mmS-1]=rgb(90,72,45);}
+
+    // ── Post-process: vignette + color grade ──
+    {
+        double cx=SW/2.0, cy=SH/2.0;
+        double maxDist=sqrt(cx*cx+cy*cy);
+        // Desert color grade: warm shift
+        double warmR=1.08, warmG=1.02, warmB=0.92;
+        for(int py=0;py<SH;py+=2){
+            for(int px=0;px<SW;px+=2){
+                int idx=py*SW+px;
+                uint32_t c=fb[idx];
+                uint8_t r=c&0xFF, g=(c>>8)&0xFF, b=(c>>16)&0xFF;
+                // Vignette: darken edges
+                double dx=(px-cx)/cx, dy=(py-cy)/cy;
+                double vignette=1.0-(dx*dx+dy*dy)*0.15;
+                vignette=clampd(vignette,0.55,1.0);
+                // Color grade: warm desert tone
+                r=(uint8_t)clampd(r*warmR*vignette,0,255);
+                g=(uint8_t)clampd(g*warmG*vignette,0,255);
+                b=(uint8_t)clampd(b*warmB*vignette,0,255);
+                fb[idx]=rgb(r,g,b);
+                // Fill 2x2 block for performance
+                if(px+1<SW) fb[idx+1]=rgb(r,g,b);
+                if(py+1<SH) fb[(py+1)*SW+px]=rgb(r,g,b);
+                if(px+1<SW&&py+1<SH) fb[(py+1)*SW+px+1]=rgb(r,g,b);
+            }
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
