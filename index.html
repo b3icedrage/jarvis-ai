@@ -3,362 +3,233 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>OASIS — Desert Survival</title>
+<title>OASIS — Cyberpunk Arcade</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#050010;
+html,body{width:100%;height:100%;overflow:hidden;background:#050510;
   font-family:'Courier New',Courier,monospace;touch-action:none;user-select:none}
-
 #wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
-#wrap canvas{image-rendering:auto;max-width:100%;max-height:100%;position:absolute}
-#c{z-index:1}
-#cFX{z-index:2;pointer-events:none}
+canvas{width:100%;height:100%;display:block}
 
 /* HUD */
-#hud{position:absolute;top:8px;left:8px;color:#ffe4b5;font-size:12px;
-  text-shadow:1px 1px 4px rgba(0,0,0,.95),0 0 8px rgba(255,228,181,.15);pointer-events:none;z-index:10;line-height:1.5}
-.bar-bg{width:128px;height:10px;background:rgba(15,10,5,.85);border:1px solid rgba(255,228,181,.18);
-  border-radius:5px;overflow:hidden;margin:3px 0;position:relative}
-.bar-fill{height:100%;border-radius:5px;transition:width .25s,background .25s;
-  box-shadow:0 0 8px rgba(68,170,255,.4),inset 0 1px 0 rgba(255,255,255,.15)}
-.bar-fill.danger{box-shadow:0 0 8px rgba(208,48,48,.5),inset 0 1px 0 rgba(255,255,255,.1)}
-.bar-fill.warning{box-shadow:0 0 8px rgba(208,160,48,.5),inset 0 1px 0 rgba(255,255,255,.1)}
-#hud .dim{opacity:.55;font-size:10px}
-#hud .label{font-size:11px;letter-spacing:2px;font-weight:bold;opacity:.9}
-#hud .stats{margin-top:4px;font-size:11px;opacity:.8}
+#hud{position:absolute;top:0;left:0;right:0;padding:10px 16px;
+  display:flex;justify-content:space-between;align-items:center;
+  pointer-events:none;z-index:10;
+  background:linear-gradient(180deg,rgba(5,5,16,.85) 0%,rgba(5,5,16,0) 100%)}
+.hud-left,.hud-right{display:flex;flex-direction:column;gap:2px}
+.hud-center{display:flex;flex-direction:column;align-items:center;gap:2px}
+.hud-label{font-size:9px;letter-spacing:3px;color:rgba(180,120,255,.6);text-transform:uppercase}
+.hud-value{font-size:20px;font-weight:bold;color:#ff2aff;
+  text-shadow:0 0 10px rgba(255,42,255,.6),0 0 20px rgba(255,42,255,.3);letter-spacing:2px}
+.hud-score{font-size:28px;font-weight:bold;color:#00ffff;
+  text-shadow:0 0 12px rgba(0,255,255,.6),0 0 24px rgba(0,255,255,.3);letter-spacing:3px}
+.hud-lives{display:flex;gap:6px;margin-top:2px}
+.life{width:12px;height:12px;border-radius:50%;
+  background:radial-gradient(circle,#ff2aff,#cc00cc);
+  box-shadow:0 0 6px rgba(255,42,255,.6);transition:opacity .3s}
+.life.dead{opacity:.15;box-shadow:none}
+.hud-speed{font-size:10px;color:rgba(0,255,255,.5);letter-spacing:1px}
 
-/* Sprint indicator */
-#sprint-indicator{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);
-  color:rgba(255,228,181,.7);font-size:11px;pointer-events:none;z-index:10;
-  text-shadow:0 0 6px rgba(255,200,100,.3);opacity:0;transition:opacity .2s;letter-spacing:2px}
-#sprint-indicator.show{opacity:1}
-
-/* Touch controls */
-.touch{position:absolute;z-index:20;border-radius:50%;
-  background:rgba(255,228,181,.06);border:2px solid rgba(255,228,181,.15);
-  backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);transition:background .15s}
-.touch:active{background:rgba(255,228,181,.12)}
-#joy{width:110px;height:110px;bottom:20px;left:20px}
-#knob{width:32px;height:32px;border-radius:50%;
-  background:radial-gradient(circle,rgba(255,228,181,.35),rgba(255,228,181,.15));
-  box-shadow:0 0 6px rgba(255,228,181,.15);
-  position:absolute;top:39px;left:39px;pointer-events:none}
-.arrow{width:50px;height:50px;bottom:26px;display:flex;align-items:center;
-  justify-content:center;font-size:18px;color:rgba(255,228,181,.4)}
-#al{right:82px} #ar{right:18px}
-.sprint-btn{width:44px;height:44px;bottom:90px;right:52px;font-size:10px;
-  display:flex;align-items:center;justify-content:center;color:rgba(255,228,181,.5)}
-
-/* Title */
+/* Title Screen */
 #title{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;background:rgba(5,0,16,.97);cursor:pointer}
-#title-bg{position:absolute;inset:0;overflow:hidden}
-#title-bg canvas{width:100%;height:100%;opacity:.35}
-#title-content{position:relative;z-index:2;text-align:center;padding:0 20px}
-#title h1{font-size:clamp(36px,9vw,72px);letter-spacing:14px;
-  text-shadow:0 0 30px rgba(0,229,255,.5),0 0 60px rgba(0,229,255,.3),0 0 100px rgba(138,43,226,.2);
-  color:#00e5ff;animation:titleGlow 4s ease-in-out infinite}
-@keyframes titleGlow{0%,100%{text-shadow:0 0 30px rgba(0,229,255,.5),0 0 60px rgba(0,229,255,.3),0 0 100px rgba(138,43,226,.2)}
-  50%{text-shadow:0 0 40px rgba(0,229,255,.7),0 0 80px rgba(0,229,255,.4),0 0 120px rgba(138,43,226,.3)}}
-#title .sub{font-size:clamp(11px,2.8vw,15px);margin:8px 0 30px;opacity:.6;letter-spacing:6px;color:#8a2be2}
-#title .inst{font-size:clamp(10px,2.2vw,12px);line-height:2;opacity:.45;max-width:380px;margin:0 auto;
-  border-top:1px solid rgba(138,43,226,.2);border-bottom:1px solid rgba(138,43,226,.2);padding:12px 0}
-#title .start{margin-top:30px;font-size:clamp(14px,3.5vw,20px);letter-spacing:4px;
-  animation:pulse 2.2s ease-in-out infinite;color:#00e5ff}
+  align-items:center;justify-content:center;background:rgba(5,5,16,.97);cursor:pointer}
+#title canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.4}
+#title-content{position:relative;z-index:2;text-align:center;padding:0 24px}
+#title h1{font-size:clamp(32px,10vw,72px);letter-spacing:16px;
+  text-shadow:0 0 30px rgba(0,255,255,.6),0 0 60px rgba(255,42,255,.4),0 0 100px rgba(128,0,255,.2);
+  color:#00ffff;animation:tg 3s ease-in-out infinite}
+@keyframes tg{0%,100%{text-shadow:0 0 30px rgba(0,255,255,.6),0 0 60px rgba(255,42,255,.4)}
+  50%{text-shadow:0 0 40px rgba(0,255,255,.8),0 0 80px rgba(255,42,255,.6),0 0 120px rgba(128,0,255,.3)}}
+#title .sub{font-size:clamp(10px,2.5vw,14px);margin:10px 0 28px;opacity:.6;letter-spacing:6px;color:#ff2aff}
+#title .inst{font-size:clamp(9px,2vw,12px);line-height:2.2;opacity:.4;max-width:400px;margin:0 auto;
+  border:1px solid rgba(128,0,255,.2);border-radius:4px;padding:14px 18px}
+#title .start{margin-top:28px;font-size:clamp(13px,3.5vw,20px);letter-spacing:4px;
+  animation:pulse 2s ease-in-out infinite;color:#00ffff}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.97)}}
-
-/* Warning flash */
-#warn{position:absolute;inset:0;z-index:15;pointer-events:none;
-  background:rgba(200,25,25,0);transition:background .4s}
 
 /* Game Over */
 #gameover{position:absolute;inset:0;z-index:35;display:none;flex-direction:column;
-  align-items:center;justify-content:center;background:rgba(10,4,2,.95);cursor:pointer}
-#gameover h2{font-size:clamp(28px,7vw,52px);color:#e04040;letter-spacing:8px;margin-bottom:12px;
-  text-shadow:0 0 20px rgba(224,64,64,.4)}
-#gameover .go-score{font-size:clamp(14px,3.5vw,20px);color:#ffe4b5;margin-bottom:24px;opacity:.7}
-#gameover .restart{font-size:clamp(13px,3vw,18px);color:#ffe4b5;animation:pulse 2s ease-in-out infinite;letter-spacing:3px}
+  align-items:center;justify-content:center;background:rgba(5,5,16,.95);cursor:pointer}
+#gameover h2{font-size:clamp(28px,8vw,56px);letter-spacing:10px;margin-bottom:8px;
+  background:linear-gradient(90deg,#ff2aff,#00ffff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text}
+#gameover .go-sub{font-size:clamp(12px,3vw,18px);color:rgba(255,255,255,.5);margin-bottom:6px;letter-spacing:3px}
+#gameover .go-score{font-size:clamp(22px,6vw,40px);color:#00ffff;margin-bottom:20px;letter-spacing:4px;
+  text-shadow:0 0 15px rgba(0,255,255,.5)}
+#gameover .go-best{font-size:clamp(11px,2.5vw,14px);color:rgba(255,42,255,.6);margin-bottom:24px;letter-spacing:2px}
+#gameover .restart{font-size:clamp(13px,3vw,18px);color:#00ffff;animation:pulse 2s ease-in-out infinite;letter-spacing:4px;
+  border:1px solid rgba(0,255,255,.3);padding:10px 28px;border-radius:4px}
+
+/* Touch Controls */
+.touch-zone{position:absolute;z-index:20;bottom:0;height:45%;width:33%;opacity:0}
+#tz-left{left:0}
+#tz-mid{left:33%;width:34%}
+#tz-right{right:0}
+.touch-jump{position:absolute;z-index:20;top:0;right:0;width:25%;height:30%;opacity:0}
+
+/* Lives bar at bottom */
+#lives-bar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+  display:flex;gap:8px;z-index:10;pointer-events:none}
+.lb-dot{width:10px;height:10px;border-radius:50%;
+  background:radial-gradient(circle,#ff2aff,#aa00aa);
+  box-shadow:0 0 8px rgba(255,42,255,.5);transition:all .3s}
+.lb-dot.dead{background:#221;box-shadow:none}
 
 /* Loading */
 #loading{position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;background:#050010;color:#00e5ff}
-#loading .title-text{font-size:20px;letter-spacing:8px;margin-bottom:20px;
-  text-shadow:0 0 20px rgba(0,229,255,.4)}
-.spin{width:32px;height:32px;border:3px solid rgba(212,165,116,.3);border-top-color:#00e5ff;
+  align-items:center;justify-content:center;background:#050510;color:#00ffff}
+.spin{width:32px;height:32px;border:3px solid rgba(128,0,255,.3);border-top-color:#00ffff;
   border-radius:50%;animation:sp .8s linear infinite;margin-bottom:14px;
-  box-shadow:0 0 10px rgba(0,229,255,.2)}
+  box-shadow:0 0 12px rgba(0,255,255,.2)}
 @keyframes sp{to{transform:rotate(360deg)}}
-#loading .status{font-size:11px;opacity:.5;letter-spacing:2px}
-
-/* Rotate device overlay */
-#rotate{position:fixed;inset:0;z-index:100;background:#0a0804;display:none;
-  flex-direction:column;align-items:center;justify-content:center;color:#ffe4b5;
-  text-align:center;padding:20px}
-#rotate .icon{font-size:64px;margin-bottom:16px;animation:spin-phone 2s ease-in-out infinite}
-#rotate .msg{font-size:16px;letter-spacing:3px;opacity:.8}
-#rotate .sub{font-size:11px;opacity:.4;margin-top:8px}
-@keyframes spin-phone{0%{transform:rotate(0deg)}50%{transform:rotate(90deg)}100%{transform:rotate(0deg)}}
-@media (orientation:portrait){#rotate{display:flex}}
-@media (orientation:landscape){#rotate{display:none}}
-
-/* Sandstorm overlay CSS */
-#sandstorm-overlay{position:absolute;inset:0;z-index:12;pointer-events:none;
-  opacity:0;transition:opacity 1s;background:repeating-linear-gradient(
-  -30deg,transparent,transparent 4px,rgba(180,150,100,.03) 4px,rgba(180,150,100,.03) 8px);
-  mix-blend-mode:screen}
-#sandstorm-overlay.active{opacity:1}
-
-/* Scanline effect */
-#scanlines{position:absolute;inset:0;z-index:11;pointer-events:none;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);
-  opacity:.3}
+#loading .status{font-size:11px;opacity:.5;letter-spacing:3px}
 </style>
 </head>
 <body>
 
 <div id="loading">
-  <div class="title-text">🏜️ OASIS</div>
   <div class="spin"></div>
-  <div class="status">Entering the desert…</div>
+  <div class="status">INITIALIZING THE OASIS…</div>
 </div>
 
-<!-- Rotate device overlay -->
-<div id="rotate">
-  <div class="icon">📱↻</div>
-  <div class="msg">ROTATE YOUR PHONE</div>
-  <div class="sub">This game requires landscape mode</div>
-</div>
-
-<!-- Title Screen -->
 <div id="title" style="display:none">
-  <div id="title-bg"><canvas id="title-canvas" width="320" height="200"></canvas></div>
+  <canvas id="title-bg" width="400" height="300"></canvas>
   <div id="title-content">
-    <h1>🏜️ OASIS</h1>
-    <div class="sub">A DESERT SURVIVAL GAME</div>
+    <h1>OASIS</h1>
+    <div class="sub">CYBERPUNK ARCADE</div>
     <div class="inst">
-      You wake in a lone house in a vast, empty desert.<br>
-      Your water is draining — find the shimmering blue oases to survive.<br>
-      The desert is flat and brown, with nothing but water to save you.<br><br>
-      <b>📱 Mobile:</b> Left joystick · Right arrows to turn<br>
-      <b>⌨️ Keyboard:</b> WASD to move · ← → to turn<br>
-      <b>🏃 Sprint:</b> Hold SHIFT or tap sprint button<br>
-      <b>📷 Camera:</b> Press V or tap 📷 to toggle 3rd person
+      You are a digital avatar inside the OASIS.<br>
+      Dash through the neon grid, dodge glitch blocks and rogue drones,<br>
+      and collect Easter Eggs and Score Coins to survive.<br><br>
+      <b>⌨️ Keyboard:</b> ← → or A/D to move · SPACE to jump<br>
+      <b>📱 Touch:</b> Left/Center/Right zones to move · Top-right to jump<br><br>
+      <span style="color:#ff2aff">3 lives · Speed increases over time</span>
     </div>
-    <div class="start">[ TAP TO BEGIN ]</div>
+    <div class="start">[ TAP TO JACK IN ]</div>
   </div>
 </div>
 
-<!-- Game Over -->
 <div id="gameover">
-  <h2>☠️ LOST IN THE DESERT</h2>
-  <div class="go-score">Oases found: <span id="go-score">0</span></div>
-  <div class="restart">[ TAP TO TRY AGAIN ]</div>
+  <h2>DISCONNECTED</h2>
+  <div class="go-sub">Your avatar was derezzed</div>
+  <div class="go-score">SCORE: <span id="go-score">0</span></div>
+  <div class="go-best">BEST: <span id="go-best">0</span></div>
+  <div class="restart">[ RECONNECT ]</div>
 </div>
 
-<!-- Game -->
 <div id="wrap">
-  <canvas id="c" width="800" height="450"></canvas>
-  <canvas id="cFX" width="800" height="450"></canvas>
-  <div id="warn"></div>
-  <div id="scanlines"></div>
-  <div id="sandstorm-overlay"></div>
+  <canvas id="c"></canvas>
   <div id="hud">
-    <div class="label">🏜️ OASIS</div>
-    <div class="dim">💧 Water</div>
-    <div class="bar-bg"><div class="bar-fill" id="tf" style="width:100%;background:linear-gradient(90deg,#2288ee,#44aaff)"></div></div>
-    <div style="font-size:10px" id="tv">100%</div>
-    <div class="stats">⭐ <span id="sv">0</span> <span class="dim">oases</span></div>
-    <div id="combo" style="margin-top:2px;font-size:10px;color:#ffb347;display:none">🔥 x<span id="combo-v">0</span></div>
-    <div id="sandstorm-warn" style="margin-top:3px;font-size:10px;color:#e8a040;display:none;
-      animation:sandstormBlink .5s ease-in-out infinite">🌪️ SANDSTORM</div>
-    <div id="compass" class="dim" style="margin-top:2px;font-size:10px"></div>
+    <div class="hud-left">
+      <div class="hud-label">SCORE</div>
+      <div class="hud-score" id="score-val">0</div>
+    </div>
+    <div class="hud-center">
+      <div class="hud-label">LIVES</div>
+      <div class="hud-lives" id="lives-display"></div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-label">SPEED</div>
+      <div class="hud-value" id="speed-val">1x</div>
+      <div class="hud-speed" id="level-val">SECTOR 1</div>
+    </div>
   </div>
-  <div id="sprint-indicator">🏃 SPRINTING</div>
-  <div class="touch" id="joy"><div id="knob"></div></div>
-  <div class="touch arrow" id="al">◀</div>
-  <div class="touch arrow" id="ar">▶</div>
-  <div class="touch sprint-btn" id="sprint-touch">🏃</div>
-  <div class="touch" id="cam-toggle" style="width:44px;height:44px;bottom:90px;right:110px;font-size:10px;
-    display:flex;align-items:center;justify-content:center;color:rgba(255,228,181,.5)">📷</div>
+  <div id="lives-bar"></div>
+  <div class="touch-zone" id="tz-left"></div>
+  <div class="touch-zone" id="tz-mid"></div>
+  <div class="touch-zone" id="tz-right"></div>
+  <div class="touch-jump" id="tz-jump"></div>
 </div>
 
-<style>@keyframes sandstormBlink{0%,100%{opacity:1}50%{opacity:.4}}</style>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
 <script>
 /* ═══════════════════════════════════════════════════════════
-   AMBIENT AUDIO ENGINE
+   AUDIO ENGINE — Synthwave Sounds
    ═══════════════════════════════════════════════════════════ */
-var audioCtx = null;
-var ambientNodes = null;
-
+var AC = null;
 function initAudio() {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    startAmbientWind();
+    AC = new (window.AudioContext || window.webkitAudioContext)();
 }
 
-function startAmbientWind() {
-    if (!audioCtx) return;
+function sfx(type) {
+    if (!AC) return;
     try {
-        // Brown noise for desert wind
-        var bufLen = audioCtx.sampleRate * 4;
-        var buf = audioCtx.createBuffer(2, bufLen, audioCtx.sampleRate);
-        for (var ch = 0; ch < 2; ch++) {
-            var data = buf.getChannelData(ch);
-            var last = 0;
-            for (var i = 0; i < bufLen; i++) {
-                var white = Math.random() * 2 - 1;
-                data[i] = (last + (0.02 * white)) / 1.02;
-                last = data[i];
-                data[i] *= 3.5;
-            }
-        }
-        var src = audioCtx.createBufferSource();
-        src.buffer = buf;
-        src.loop = true;
-        var lpf = audioCtx.createBiquadFilter();
-        lpf.type = 'lowpass';
-        lpf.frequency.value = 200;
-        lpf.Q.value = 0.5;
-        var gain = audioCtx.createGain();
-        gain.gain.value = 0.12;
-        src.connect(lpf);
-        lpf.connect(gain);
-        gain.connect(audioCtx.destination);
-        src.start();
-        ambientNodes = { src: src, gain: gain, lpf: lpf };
-
-        // Modulate wind
-        function modWind() {
-            if (!ambientNodes) return;
-            var t = audioCtx.currentTime;
-            ambientNodes.lpf.frequency.setTargetAtTime(150 + Math.random() * 150, t, 2);
-            ambientNodes.gain.gain.setTargetAtTime(0.08 + Math.random() * 0.1, t, 1.5);
-            setTimeout(modWind, 3000 + Math.random() * 4000);
-        }
-        modWind();
-    } catch(e) {}
-}
-
-function playSound(type) {
-    if (!audioCtx) return;
-    try {
-        var t = audioCtx.currentTime;
+        var t = AC.currentTime;
         switch(type) {
-            case 1: { // Footstep — layered thud
-                var o1 = audioCtx.createOscillator();
-                var g1 = audioCtx.createGain();
-                o1.type = 'triangle'; o1.frequency.value = 60 + Math.random() * 30;
-                g1.gain.setValueAtTime(0.1, t);
-                g1.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
-                o1.connect(g1); g1.connect(audioCtx.destination);
-                o1.start(t); o1.stop(t + 0.1);
-                // Click layer
-                var o2 = audioCtx.createOscillator();
-                var g2 = audioCtx.createGain();
-                o2.type = 'square'; o2.frequency.value = 2000 + Math.random() * 1000;
-                g2.gain.setValueAtTime(0.025, t);
-                g2.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
-                o2.connect(g2); g2.connect(audioCtx.destination);
-                o2.start(t); o2.stop(t + 0.03);
+            case 'move': {
+                var o = AC.createOscillator(), g = AC.createGain();
+                o.type = 'square'; o.frequency.value = 440;
+                g.gain.setValueAtTime(0.06, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+                o.connect(g); g.connect(AC.destination);
+                o.start(t); o.stop(t + 0.06);
                 break;
             }
-            case 2: { // Drink — ascending sparkle
-                for (var n = 0; n < 3; n++) {
-                    var o = audioCtx.createOscillator();
-                    var g = audioCtx.createGain();
-                    o.type = 'sine';
-                    o.frequency.setValueAtTime(400 + n * 200, t + n * 0.08);
-                    o.frequency.exponentialRampToValueAtTime(1400 + n * 100, t + 0.3 + n * 0.08);
-                    g.gain.setValueAtTime(0.08, t + n * 0.08);
-                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.4 + n * 0.08);
-                    o.connect(g); g.connect(audioCtx.destination);
-                    o.start(t + n * 0.08); o.stop(t + 0.45 + n * 0.08);
-                }
+            case 'jump': {
+                var o = AC.createOscillator(), g = AC.createGain();
+                o.type = 'sawtooth';
+                o.frequency.setValueAtTime(200, t);
+                o.frequency.exponentialRampToValueAtTime(800, t + 0.15);
+                g.gain.setValueAtTime(0.1, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+                o.connect(g); g.connect(AC.destination);
+                o.start(t); o.stop(t + 0.2);
                 break;
             }
-            case 3: { // Death — descending drone + crash
-                var o = audioCtx.createOscillator();
-                var g = audioCtx.createGain();
+            case 'coin': {
+                [800, 1000, 1200].forEach(function(f, i) {
+                    var o = AC.createOscillator(), g = AC.createGain();
+                    o.type = 'sine'; o.frequency.value = f;
+                    g.gain.setValueAtTime(0.08, t + i * 0.05);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.15 + i * 0.05);
+                    o.connect(g); g.connect(AC.destination);
+                    o.start(t + i * 0.05); o.stop(t + 0.18 + i * 0.05);
+                });
+                break;
+            }
+            case 'egg': {
+                [600, 800, 1000, 1400].forEach(function(f, i) {
+                    var o = AC.createOscillator(), g = AC.createGain();
+                    o.type = 'sine'; o.frequency.value = f;
+                    g.gain.setValueAtTime(0.07, t + i * 0.04);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.2 + i * 0.04);
+                    o.connect(g); g.connect(AC.destination);
+                    o.start(t + i * 0.04); o.stop(t + 0.25 + i * 0.04);
+                });
+                break;
+            }
+            case 'hit': {
+                var o = AC.createOscillator(), g = AC.createGain();
                 o.type = 'sawtooth';
                 o.frequency.setValueAtTime(300, t);
-                o.frequency.exponentialRampToValueAtTime(40, t + 1.2);
-                g.gain.setValueAtTime(0.12, t);
-                g.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-                o.connect(g); g.connect(audioCtx.destination);
-                o.start(t); o.stop(t + 1.2);
-                // Noise burst
-                var buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate);
+                o.frequency.exponentialRampToValueAtTime(40, t + 0.5);
+                g.gain.setValueAtTime(0.15, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+                o.connect(g); g.connect(AC.destination);
+                o.start(t); o.stop(t + 0.5);
+                // noise burst
+                var buf = AC.createBuffer(1, AC.sampleRate * 0.2, AC.sampleRate);
                 var d = buf.getChannelData(0);
                 for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
-                var ns = audioCtx.createBufferSource();
-                ns.buffer = buf;
-                var ng = audioCtx.createGain();
-                ng.gain.setValueAtTime(0.15, t);
-                ng.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-                ns.connect(ng); ng.connect(audioCtx.destination);
-                ns.start(t); ns.stop(t + 0.3);
+                var ns = AC.createBufferSource(); ns.buffer = buf;
+                var ng = AC.createGain();
+                ng.gain.setValueAtTime(0.2, t);
+                ng.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+                ns.connect(ng); ng.connect(AC.destination);
+                ns.start(t); ns.stop(t + 0.2);
                 break;
             }
-            case 4: { // Warning beep
-                var o = audioCtx.createOscillator();
-                var g = audioCtx.createGain();
-                o.type = 'square'; o.frequency.value = 880;
-                g.gain.setValueAtTime(0.06, t);
-                g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-                o.connect(g); g.connect(audioCtx.destination);
-                o.start(t); o.stop(t + 0.12);
-                break;
-            }
-            case 5: { // Door creak — two oscillators
-                var o1 = audioCtx.createOscillator();
-                var o2 = audioCtx.createOscillator();
-                var g = audioCtx.createGain();
-                o1.type = 'sawtooth'; o2.type = 'triangle';
-                o1.frequency.setValueAtTime(120, t);
-                o1.frequency.linearRampToValueAtTime(80, t + 0.15);
-                o1.frequency.linearRampToValueAtTime(160, t + 0.25);
-                o2.frequency.setValueAtTime(240, t);
-                o2.frequency.linearRampToValueAtTime(160, t + 0.25);
-                g.gain.setValueAtTime(0.05, t);
-                g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-                o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
-                o1.start(t); o2.start(t);
-                o1.stop(t + 0.3); o2.stop(t + 0.3);
-                break;
-            }
-            case 6: { // Collect — ascending arpeggio
-                var notes = [600, 800, 1000, 1400];
-                for (var i = 0; i < notes.length; i++) {
-                    var o = audioCtx.createOscillator();
-                    var g = audioCtx.createGain();
-                    o.type = 'sine'; o.frequency.value = notes[i];
-                    g.gain.setValueAtTime(0.07, t + i * 0.06);
-                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.2 + i * 0.06);
-                    o.connect(g); g.connect(audioCtx.destination);
-                    o.start(t + i * 0.06); o.stop(t + 0.25 + i * 0.06);
+            case 'die': {
+                for (var n = 0; n < 3; n++) {
+                    var o = AC.createOscillator(), g = AC.createGain();
+                    o.type = 'sawtooth';
+                    o.frequency.setValueAtTime(200 - n * 50, t + n * 0.12);
+                    o.frequency.exponentialRampToValueAtTime(30, t + 0.6 + n * 0.12);
+                    g.gain.setValueAtTime(0.12, t + n * 0.12);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.7 + n * 0.12);
+                    o.connect(g); g.connect(AC.destination);
+                    o.start(t + n * 0.12); o.stop(t + 0.8);
                 }
-                break;
-            }
-            case 7: { // Sandstorm wind surge
-                var buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.8, audioCtx.sampleRate);
-                var d = buf.getChannelData(0);
-                var prev = 0;
-                for (var i = 0; i < d.length; i++) {
-                    var w = Math.random() * 2 - 1;
-                    d[i] = (prev + 0.04 * w) / 1.04;
-                    prev = d[i];
-                    d[i] *= 8 * Math.sin(Math.PI * i / d.length);
-                }
-                var ns = audioCtx.createBufferSource();
-                ns.buffer = buf;
-                var lpf = audioCtx.createBiquadFilter();
-                lpf.type = 'lowpass'; lpf.frequency.value = 400;
-                var g = audioCtx.createGain();
-                g.gain.setValueAtTime(0.2, t);
-                g.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
-                ns.connect(lpf); lpf.connect(g); g.connect(audioCtx.destination);
-                ns.start(t); ns.stop(t + 0.8);
                 break;
             }
         }
@@ -366,434 +237,917 @@ function playSound(type) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   POST-PROCESSING ENGINE
+   3D PERSPECTIVE ENGINE
    ═══════════════════════════════════════════════════════════ */
-var PP = {
-    // Pre-allocated buffers for performance
-    tmpCanvas: null, tmpCtx: null,
-    bloomCanvas: null, bloomCtx: null,
-    init: function(w, h) {
-        // Half-res for bloom (performance)
-        this.tmpCanvas = document.createElement('canvas');
-        this.tmpCanvas.width = w; this.tmpCanvas.height = h;
-        this.tmpCtx = this.tmpCanvas.getContext('2d', {willReadFrequently: true});
-        this.bloomCanvas = document.createElement('canvas');
-        this.bloomCanvas.width = w >> 1; this.bloomCanvas.height = h >> 1;
-        this.bloomCtx = this.bloomCanvas.getContext('2d', {willReadFrequently: true});
-        this.W = w; this.H = h;
-    },
-    applyFrame: function(srcCanvas, dstCanvas, time, thirst, sandstorm) {
-        var W = this.W, H = this.H;
-        var srcCtx = this.tmpCtx;
-        var bloomCtx = this.bloomCtx;
+var cv, W, H, ctx;
+var SW = 900, SH = 500; // virtual resolution
+var PERSPECTIVE = 280; // camera focal length
+var VANISH_Y = SH * 0.42; // horizon line
+var ROAD_SEGMENTS = 200;
+var ROAD_W = 1800; // half-width of road
+var SEG_LEN = 8;
 
-        // 1) Copy source to temp
-        srcCtx.drawImage(srcCanvas, 0, 0);
-        var srcData = srcCtx.getImageData(0, 0, W, H);
-        var src = srcData.data;
+// Camera
+var camZ = 0;
+var speed = 0;
+var baseSpeed = 3.5;
+var maxSpeed = 12;
+var accel = 0;
+var speedMul = 1;
 
-        // 2) Bloom extraction: downsample, threshold bright pixels
-        bloomCtx.clearRect(0, 0, W >> 1, H >> 1);
-        bloomCtx.drawImage(srcCanvas, 0, 0, W >> 1, H >> 1);
-        var bloomData = bloomCtx.getImageData(0, 0, W >> 1, H >> 1);
-        var bl = bloomData.data;
-        var bw = W >> 1;
-        for (var i = 0; i < bl.length; i += 4) {
-            var lum = bl[i] * 0.299 + bl[i+1] * 0.587 + bl[i+2] * 0.114;
-            if (lum < 160) { bl[i] = bl[i+1] = bl[i+2] = 0; }
-            else {
-                var f = (lum - 160) / 95;
-                bl[i] = (bl[i] * f * 0.6) | 0;
-                bl[i+1] = (bl[i+1] * f * 0.6) | 0;
-                bl[i+2] = (bl[i+2] * f * 0.8) | 0;
-            }
-        }
-        bloomCtx.putImageData(bloomData, 0, 0);
+// Player
+var playerLane = 1; // 0=left, 1=center, 2=right
+var playerTargetX = 0;
+var playerX = 0;
+var playerY = 0; // vertical offset (jump)
+var playerVelY = 0;
+var isJumping = false;
+var lives = 3;
+var score = 0;
+var bestScore = 0;
+var combo = 0;
+var comboTimer = 0;
+var invincible = 0;
 
-        // 3) Blur bloom (simple box blur, 2 passes)
-        this.bloomCtx.filter = 'blur(6px)';
-        this.bloomCtx.drawImage(this.bloomCanvas, 0, 0);
-        this.bloomCtx.filter = 'none';
+// Road
+var road = [];
+var curvature = 0;
+var targetCurve = 0;
 
-        // 4) Compose final with post-processing
-        var dstCtx = dstCanvas.getContext('2d');
-        dstCtx.clearRect(0, 0, W, H);
+// Objects
+var obstacles = []; // {z, lane, type, active}
+var collectibles = []; // {z, lane, type, active, collected}
+var particles = [];
 
-        // Draw base image
-        dstCtx.drawImage(srcCanvas, 0, 0);
+// State
+var state = 'title'; // title, playing, dead
+var gameOverTimer = 0;
+var frameCount = 0;
+var shakeX = 0, shakeY = 0;
 
-        // Apply bloom (additive)
-        dstCtx.globalCompositeOperation = 'screen';
-        dstCtx.globalAlpha = 0.35;
-        dstCtx.drawImage(this.bloomCanvas, 0, 0, W, H);
-        dstCtx.globalAlpha = 1.0;
-        dstCtx.globalCompositeOperation = 'source-over';
+// Grid animation
+var gridOffset = 0;
 
-        // 5) Chromatic aberration via pixel manipulation (subtle)
-        // Only do this at reduced resolution for performance
-        var finalData = dstCtx.getImageData(0, 0, W, H);
-        var fd = finalData.data;
-        var aberration = 1.5; // pixels offset
-        var cx = W / 2, cy = H / 2;
-        // We'll do a simplified version on every 4th pixel and interpolate
-        for (var y = 0; y < H; y += 2) {
-            for (var x = 0; x < W; x += 2) {
-                var dx = (x - cx) / cx, dy = (y - cy) / cy;
-                var dist = Math.sqrt(dx * dx + dy * dy);
-                var offset = dist * aberration;
-                if (offset < 0.2) continue;
-                var ox = dx * offset, oy = dy * offset;
-                var idx = (y * W + x) * 4;
-                // Sample red channel shifted
-                var rx = Math.min(W - 1, Math.max(0, (x + ox) | 0));
-                var ry = Math.min(H - 1, Math.max(0, (y + oy) | 0));
-                var rIdx = (ry * W + rx) * 4;
-                fd[idx] = src[rIdx]; // red from shifted position
-                // Blue from opposite shift
-                var bx = Math.min(W - 1, Math.max(0, (x - ox) | 0));
-                var by = Math.min(H - 1, Math.max(0, (y - oy) | 0));
-                var bIdx = (by * W + bx) * 4;
-                fd[idx + 2] = src[bIdx + 2]; // blue from shifted
-                // Fill adjacent pixels for 2x2 blocks
-                if (x + 1 < W) { fd[idx + 4] = fd[idx]; fd[idx + 5] = fd[idx + 1]; fd[idx + 6] = fd[idx + 2]; }
-                if (y + 1 < H) {
-                    var below = idx + W * 4;
-                    fd[below] = fd[idx]; fd[below + 1] = fd[idx + 1]; fd[below + 2] = fd[idx + 2];
-                    if (x + 1 < W) { fd[below + 4] = fd[idx]; fd[below + 5] = fd[idx + 1]; fd[below + 6] = fd[idx + 2]; }
-                }
-            }
-        }
+function initRoad() {
+    road = [];
+    for (var i = 0; i < ROAD_SEGMENTS; i++) {
+        var z = i * SEG_LEN;
+        if (i < 50) curvature = 0;
+        else if (i < 80) targetCurve = 0.002;
+        else if (i < 120) targetCurve = -0.003;
+        else if (i < 160) targetCurve = 0.004;
+        else targetCurve = -0.002;
+        curvature += (targetCurve - curvature) * 0.05;
+        road.push({
+            z: z,
+            curve: curvature,
+            y: 0 // could add hills later
+        });
+    }
+}
 
-        // 6) Color grading — warm desert tones + contrast
-        for (var i = 0; i < fd.length; i += 4) {
-            // Warm shift
-            var r = fd[i], g = fd[i+1], b = fd[i+2];
-            // Contrast (S-curve approximation)
-            r = ((r / 255 - 0.5) * 1.12 + 0.5) * 255;
-            g = ((g / 255 - 0.5) * 1.08 + 0.5) * 255;
-            b = ((b / 255 - 0.5) * 1.0 + 0.5) * 255;
-            // Warm tint
-            r = r * 1.05 + 3;
-            g = g * 1.01 + 1;
-            b = b * 0.94;
-            // Clamp
-            fd[i]   = r < 0 ? 0 : r > 255 ? 255 : r | 0;
-            fd[i+1] = g < 0 ? 0 : g > 255 ? 255 : g | 0;
-            fd[i+2] = b < 0 ? 0 : b > 255 ? 255 : b | 0;
-        }
+function resetGame() {
+    camZ = 0;
+    speed = baseSpeed;
+    accel = 0;
+    speedMul = 1;
+    playerLane = 1;
+    playerTargetX = 0;
+    playerX = 0;
+    playerY = 0;
+    playerVelY = 0;
+    isJumping = false;
+    lives = 3;
+    score = 0;
+    combo = 0;
+    comboTimer = 0;
+    invincible = 0;
+    obstacles = [];
+    collectibles = [];
+    particles = [];
+    shakeX = 0; shakeY = 0;
+    initRoad();
+    spawnObjects();
+    updateHUD();
+}
 
-        // 7) Film grain (subtle)
-        var grainT = time * 0.1;
-        for (var i = 0; i < fd.length; i += 16) { // every 4th pixel for perf
-            var grain = ((Math.sin(i * 0.1 + grainT) * 43758.5453) % 1 - 0.5) * 18;
-            fd[i]   = Math.min(255, Math.max(0, fd[i] + grain));
-            fd[i+1] = Math.min(255, Math.max(0, fd[i+1] + grain));
-            fd[i+2] = Math.min(255, Math.max(0, fd[i+2] + grain));
-        }
-
-        // 8) Vignette
-        var vignetteStrength = 0.55;
-        for (var y = 0; y < H; y++) {
-            for (var x = 0; x < W; x += 2) {
-                var dx = (x - cx) / cx, dy = (y - cy) / cy;
-                var dist = Math.sqrt(dx * dx + dy * dy);
-                var vig = 1.0 - dist * dist * vignetteStrength;
-                if (vig < 0) vig = 0;
-                var idx = (y * W + x) * 4;
-                fd[idx] = (fd[idx] * vig) | 0;
-                fd[idx+1] = (fd[idx+1] * vig) | 0;
-                fd[idx+2] = (fd[idx+2] * vig) | 0;
-                // Copy to neighbor
-                if (x + 1 < W) {
-                    fd[idx+4] = (fd[idx+4] * vig) | 0;
-                    fd[idx+5] = (fd[idx+5] * vig) | 0;
-                    fd[idx+6] = (fd[idx+6] * vig) | 0;
-                }
-            }
-        }
-
-        dstCtx.putImageData(finalData, 0, 0);
-
-        // 9) Lens flare from sun (if not indoors)
-        var sunX = (Math.sin(time * 0.008) * 0.3 + 0.5) * W;
-        var sunY = H * 0.18 + Math.sin(time * 0.012) * 15;
-        var flareAlpha = 0.15 + Math.sin(time * 0.5) * 0.05;
-
-        // Sun glow
-        var grad = dstCtx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 60);
-        grad.addColorStop(0, 'rgba(255,220,120,' + flareAlpha + ')');
-        grad.addColorStop(0.3, 'rgba(255,180,80,' + (flareAlpha * 0.5) + ')');
-        grad.addColorStop(1, 'rgba(255,150,50,0)');
-        dstCtx.fillStyle = grad;
-        dstCtx.fillRect(sunX - 60, sunY - 60, 120, 120);
-
-        // Secondary flare spots along center line
-        var flareX = W - sunX;
-        for (var f = 0; f < 3; f++) {
-            var fx = sunX + (flareX - sunX) * (0.3 + f * 0.2);
-            var fy = H * 0.5 + (sunY - H * 0.5) * (0.1 + f * 0.15);
-            var fr = 6 + f * 4;
-            var fg = dstCtx.createRadialGradient(fx, fy, 0, fx, fy, fr);
-            fg.addColorStop(0, 'rgba(255,200,120,' + (flareAlpha * 0.3) + ')');
-            fg.addColorStop(1, 'rgba(255,180,80,0)');
-            dstCtx.fillStyle = fg;
-            dstCtx.fillRect(fx - fr, fy - fr, fr * 2, fr * 2);
-        }
-
-        // 10) Thirst danger tint overlay
-        if (thirst < 25 && thirst > 0) {
-            var danger = (25 - thirst) / 25;
-            var pulse = Math.sin(time * 0.005) * 0.3 + 0.7;
-            dstCtx.fillStyle = 'rgba(180,40,20,' + (danger * 0.08 * pulse) + ')';
-            dstCtx.fillRect(0, 0, W, H);
-        }
-
-        // 11) Sandstorm color overlay
-        if (sandstorm) {
-            var ssAlpha = 0.04 + Math.sin(time * 0.01) * 0.02;
-            dstCtx.fillStyle = 'rgba(200,170,120,' + ssAlpha + ')';
-            dstCtx.fillRect(0, 0, W, H);
+function spawnObjects() {
+    obstacles = [];
+    collectibles = [];
+    for (var i = 0; i < 300; i++) {
+        var z = 600 + i * (30 + Math.random() * 40);
+        var lane = Math.floor(Math.random() * 3);
+        if (Math.random() < 0.55) {
+            obstacles.push({ z: z, lane: lane, type: Math.random() < 0.5 ? 'block' : 'drone', active: true, hit: false });
+        } else {
+            collectibles.push({ z: z, lane: lane, type: Math.random() < 0.35 ? 'egg' : 'coin', active: true, collected: false });
         }
     }
-};
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROJECTION HELPERS
+   ═══════════════════════════════════════════════════════════ */
+function projectZ(worldZ) {
+    var relZ = worldZ - camZ;
+    if (relZ <= 0) return null;
+    var scale = PERSPECTIVE / relZ;
+    return {
+        x: SW / 2,
+        y: VANISH_Y,
+        scale: scale,
+        depth: relZ
+    };
+}
+
+function worldToScreen(wx, wy, worldZ) {
+    var relZ = worldZ - camZ;
+    if (relZ <= 1) return null;
+    var scale = PERSPECTIVE / relZ;
+    return {
+        x: SW / 2 + wx * scale,
+        y: VANISH_Y + wy * scale,
+        scale: scale,
+        depth: relZ
+    };
+}
+
+function getLaneX(lane, worldZ) {
+    var relZ = worldZ - camZ;
+    if (relZ <= 1) return 0;
+    var laneWidth = 180;
+    var offset = (lane - 1) * laneWidth;
+    // Add road curve offset
+    var segIdx = Math.floor((worldZ / SEG_LEN) % ROAD_SEGMENTS);
+    if (segIdx >= 0 && segIdx < road.length) {
+        offset += road[segIdx].curve * relZ * 120;
+    }
+    return offset;
+}
 
 /* ═══════════════════════════════════════════════════════════
    INPUT
    ═══════════════════════════════════════════════════════════ */
-var kbMX=0,kbMY=0,kbT=0, tMX=0,tMY=0,tT=0, keys={};
-var sprintTouch = false;
-document.addEventListener('keydown',function(e){keys[e.key]=true;
-  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()});
-document.addEventListener('keyup',function(e){keys[e.key]=false});
-
-/* ─── Touch: Joystick ─── */
-var joyEl=document.getElementById('joy'),knobEl=document.getElementById('knob'),joyTouch=null;
-joyEl.addEventListener('touchstart',function(e){e.preventDefault();joyTouch=e.changedTouches[0]});
-document.addEventListener('touchmove',function(e){
-  if(!joyTouch)return;
-  for(var i=0;i<e.changedTouches.length;i++){
-    if(e.changedTouches[i].identifier!==joyTouch.identifier)continue;
-    var r=joyEl.getBoundingClientRect(),c=r.width/2;
-    var dx=e.changedTouches[i].clientX-r.left-c, dy=e.changedTouches[i].clientY-r.top-c;
-    var d=Math.sqrt(dx*dx+dy*dy),mx=c-6;
-    if(d>mx){dx=dx/d*mx;dy=dy/d*mx}
-    tMX=dx/mx; tMY=-dy/mx;
-    knobEl.style.transform='translate('+dx+'px,'+dy+'px)';
-  }
+var keys = {};
+document.addEventListener('keydown', function(e) {
+    keys[e.key] = true;
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) e.preventDefault();
 });
-function jEnd(e){if(!joyTouch)return;for(var i=0;i<e.changedTouches.length;i++){
-  if(e.changedTouches[i].identifier===joyTouch.identifier){
-    joyTouch=null;tMX=0;tMY=0;knobEl.style.transform='translate(0,0)';
-}}}
-document.addEventListener('touchend',jEnd);document.addEventListener('touchcancel',jEnd);
+document.addEventListener('keyup', function(e) { keys[e.key] = false; });
 
-/* ─── Touch: Turn + Sprint ─── */
-var alEl=document.getElementById('al'),arEl=document.getElementById('ar'),alT=null,arT=null;
-alEl.addEventListener('touchstart',function(e){e.preventDefault();alT=e.changedTouches[0];tT=-1});
-arEl.addEventListener('touchstart',function(e){e.preventDefault();arT=e.changedTouches[0];tT=1});
-function tEnd(e){for(var i=0;i<e.changedTouches.length;i++){
-  if(alT&&e.changedTouches[i].identifier===alT.identifier){alT=null;if(!arT)tT=0}
-  if(arT&&e.changedTouches[i].identifier===arT.identifier){arT=null;if(!alT)tT=0}
-}}
-document.addEventListener('touchend',tEnd);document.addEventListener('touchcancel',tEnd);
+// Touch
+var touchLeft = false, touchRight = false, touchJump = false;
+document.getElementById('tz-left').addEventListener('touchstart', function(e) { e.preventDefault(); touchLeft = true; });
+document.getElementById('tz-right').addEventListener('touchstart', function(e) { e.preventDefault(); touchRight = true; });
+document.getElementById('tz-mid').addEventListener('touchstart', function(e) { e.preventDefault(); });
+document.getElementById('tz-jump').addEventListener('touchstart', function(e) { e.preventDefault(); touchJump = true; });
+document.addEventListener('touchend', function() { touchLeft = false; touchRight = false; touchJump = false; });
+document.addEventListener('touchcancel', function() { touchLeft = false; touchRight = false; touchJump = false; });
 
-var sprintEl=document.getElementById('sprint-touch');
-sprintEl.addEventListener('touchstart',function(e){e.preventDefault();sprintTouch=true});
-sprintEl.addEventListener('touchend',function(){sprintTouch=false});
-sprintEl.addEventListener('touchcancel',function(){sprintTouch=false});
+function inputLeft() { return keys['ArrowLeft'] || keys['a'] || keys['A'] || touchLeft; }
+function inputRight() { return keys['ArrowRight'] || keys['d'] || keys['D'] || touchRight; }
+function inputJump() { return keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W'] || touchJump; }
 
-document.getElementById('cam-toggle').addEventListener('touchstart',function(e){e.preventDefault();Module._toggle_third_person()});
+var jumpHeld = false;
+var moveTimer = 0;
 
-/* ─── Title screen background animation ─── */
-var titleCv=document.getElementById('title-canvas');
-var titleCtx=titleCv.getContext('2d');
-function drawTitleBg(t){
-  var w=titleCv.width,h=titleCv.height;
-  var img=titleCtx.createImageData(w,h);
-  for(var y=0;y<h;y++){
-    var skyT=y/h;
-    for(var x=0;x<w;x++){
-      var idx=(y*w+x)*4;
-      var r2=Math.floor(30+180*skyT+Math.sin(x*0.05+t*0.001)*10);
-      var g=Math.floor(20+150*skyT+Math.sin(y*0.03+t*0.0008)*8);
-      var b=Math.floor(15+100*skyT+Math.cos(x*0.04+t*0.0012)*6);
-      img.data[idx]=r2;img.data[idx+1]=g;img.data[idx+2]=b;img.data[idx+3]=255;
+function handleInput(dt) {
+    if (state !== 'playing') return;
+
+    moveTimer -= dt;
+
+    // Lateral movement (lane-based, with cooldown)
+    if (moveTimer <= 0) {
+        if (inputLeft() && playerLane > 0) {
+            playerLane--;
+            moveTimer = 0.12;
+            sfx('move');
+        } else if (inputRight() && playerLane < 2) {
+            playerLane++;
+            moveTimer = 0.12;
+            sfx('move');
+        }
     }
-  }
-  // Sun
-  var sx=w*0.6+Math.sin(t*0.0003)*w*0.15;
-  var sy=h*0.3-Math.sin(t*0.0005)*h*0.1;
-  for(var dy=-20;dy<=20;dy++)for(var dx=-20;dx<=20;dx++){
-    if(dx*dx+dy*dy>400)continue;
-    var px=Math.floor(sx+dx),py=Math.floor(sy+dy);
-    if(px>=0&&px<w&&py>=0&&py<h){
-      var idx=(py*w+px)*4;
-      var d=Math.sqrt(dx*dx+dy*dy)/20;
-      img.data[idx]=255;img.data[idx+1]=Math.floor(200*(1-d)+img.data[idx+1]*d);
-      img.data[idx+2]=Math.floor(80*(1-d)+img.data[idx+2]*d);
+
+    playerTargetX = getLaneX(playerLane, camZ + 50);
+
+    // Jump
+    if (inputJump() && !jumpHeld && !isJumping) {
+        isJumping = true;
+        playerVelY = -7;
+        jumpHeld = true;
+        sfx('jump');
     }
-  }
-  // Stars in upper portion
-  for(var i=0;i<30;i++){
-    var stx=(Math.sin(i*127.1)*43758.5)%1; if(stx<0)stx+=1;
-    var sty=(Math.sin(i*311.7)*43758.5)%1; if(sty<0)sty+=1;
-    var sx2=Math.floor(stx*w),sy2=Math.floor(sty*h*0.4);
-    var twinkle=Math.sin(t*0.002+i*3)*0.5+0.5;
-    var si=(sy2*w+sx2)*4;
-    if(si>=0&&si<img.data.length-3){
-      img.data[si]=255;img.data[si+1]=255;img.data[si+2]=220;
-      img.data[si+3]=Math.floor(twinkle*180);
-    }
-  }
-  titleCtx.putImageData(img,0,0);
+    if (!inputJump()) jumpHeld = false;
 }
-var titleAnimId;
-function animateTitle(t){drawTitleBg(t);titleAnimId=requestAnimationFrame(animateTitle)}
 
 /* ═══════════════════════════════════════════════════════════
-   EMSCRIPTEN + GAME LOOP
+   UPDATE
    ═══════════════════════════════════════════════════════════ */
-var Module={
-  onRuntimeInitialized:function(){
-    document.getElementById('loading').style.display='none';
-    document.getElementById('title').style.display='flex';
-    animateTitle(0);
-    Module._init();
+function update(dt) {
+    if (state !== 'playing') return;
 
-    var cv=document.getElementById('c'),ctx=cv.getContext('2d');
-    var fxCv=document.getElementById('cFX');
-    var img=ctx.createImageData(800,450);
-    PP.init(800, 450);
+    frameCount++;
+    var t = frameCount * 0.016;
 
-    var running=false,lastT=0,wasDead=false;
+    // Speed increases over time
+    speedMul = 1 + score * 0.0003;
+    if (speedMul > 2.5) speedMul = 2.5;
+    speed = baseSpeed * speedMul;
 
-    document.getElementById('title').onclick=function(){
-      cancelAnimationFrame(titleAnimId);
-      document.getElementById('title').style.display='none';
-      initAudio();
-      running=true;lastT=performance.now();
-      requestAnimationFrame(loop);
-    };
+    camZ += speed * 60 * dt;
 
-    document.getElementById('gameover').onclick=function(){
-      document.getElementById('gameover').style.display='none';
-      Module._init(); // restart
-      running=true;lastT=performance.now();
-      requestAnimationFrame(loop);
-    };
+    // Road curve (cycles)
+    var phase = (camZ / (SEG_LEN * ROAD_SEGMENTS)) * Math.PI * 2;
+    curvature = Math.sin(phase * 2) * 0.003 + Math.sin(phase * 3.7) * 0.0015;
 
-    var dirs=['N','NE','E','SE','S','SW','W','NW'];
-    var frameCount = 0;
+    // Player physics
+    playerX += (playerTargetX - playerX) * 8 * dt;
 
-    function loop(t){
-      if(!running)return;
-      var dt=Math.min((t-lastT)/1000,0.05);lastT=t;
-      frameCount++;
-
-      // Input
-      kbMX=kbMY=kbT=0;
-      if(keys['w']||keys['W']||keys['ArrowUp'])kbMY=1;
-      if(keys['s']||keys['S']||keys['ArrowDown'])kbMY=-1;
-      if(keys['a']||keys['A'])kbMX=-1;
-      if(keys['d']||keys['D'])kbMX=1;
-      if(keys['ArrowLeft'])kbT=-1;
-      if(keys['ArrowRight'])kbT=1;
-
-      var mx=kbMX+tMX, my=kbMY+tMY, turn=kbT+tT;
-      var sprint=keyS||sprintTouch?1.5:1.0;
-      if(sprint>1){mx*=sprint;my*=sprint}
-
-      Module._set_input(mx,my,turn);
-      Module._update_game(dt);
-      Module._render_game();
-
-      // Blit to source canvas
-      var fbPtr=Module._get_framebuffer();
-      var heap=Module.HEAPU8||HEAPU8; var src=new Uint8Array(heap.buffer,fbPtr,800*450*4);
-      img.data.set(src);
-      ctx.putImageData(img,0,0);
-
-      // Post-processing (skip every other frame on low-end for perf)
-      var th = Module._get_thirst();
-      var sandstorm = Module._get_sandstorm();
-      PP.applyFrame(cv, fxCv, t, th, sandstorm);
-
-      // Sound
-      var snd=Module._get_sound();
-      if(snd>0) playSound(snd);
-
-      // HUD
-      var sc=Module._get_score();
-      var ang=Module._get_angle();
-      var sprinting=Module._get_sprint();
-      var combo=Module._get_combo();
-
-      document.getElementById('tv').textContent=Math.round(th)+'%';
-      var fill=document.getElementById('tf');
-      fill.style.width=th+'%';
-      if(th<15){
-        fill.style.background='linear-gradient(90deg,#a02020,#d03030)';
-        fill.className='bar-fill danger';
-      } else if(th<35){
-        fill.style.background='linear-gradient(90deg,#b08020,#d0a030)';
-        fill.className='bar-fill warning';
-      } else {
-        fill.style.background='linear-gradient(90deg,#2288ee,#44aaff)';
-        fill.className='bar-fill';
-      }
-      document.getElementById('sv').textContent=sc;
-
-      // Combo
-      var comboEl=document.getElementById('combo');
-      if(combo>1){comboEl.style.display='block';document.getElementById('combo-v').textContent=combo;}
-      else{comboEl.style.display='none';}
-
-      // Sandstorm warning
-      var ssEl=document.getElementById('sandstorm-warn');
-      var ssOverlay=document.getElementById('sandstorm-overlay');
-      if(sandstorm){ssEl.style.display='block';ssOverlay.classList.add('active');}
-      else{ssEl.style.display='none';ssOverlay.classList.remove('active');}
-
-      // Compass
-      var di=Math.round(((ang%(Math.PI*2))+Math.PI*2)%(Math.PI*2)/(Math.PI/4))%8;
-      document.getElementById('compass').textContent='🧭 '+dirs[di];
-
-      // Sprint indicator
-      document.getElementById('sprint-indicator').className=sprinting?'show':'';
-
-      // Low thirst flash
-      var warn=document.getElementById('warn');
-      if(th<20&&th>0){
-        var p=Math.sin(t/180)*0.14+0.14;
-        warn.style.background='rgba(200,25,25,'+p+')';
-      } else {warn.style.background='rgba(200,25,25,0)'}
-
-      // Death check
-      if(th<=0&&!wasDead){wasDead=true;
-        setTimeout(function(){
-          document.getElementById('go-score').textContent=sc;
-          document.getElementById('gameover').style.display='flex';
-          running=false;
-        },600);
-      }
-      if(th>0) wasDead=false;
-
-      requestAnimationFrame(loop);
+    // Jump physics
+    if (isJumping) {
+        playerVelY += 22 * dt; // gravity
+        playerY -= playerVelY;
+        if (playerY >= 0) {
+            playerY = 0;
+            playerVelY = 0;
+            isJumping = false;
+        }
     }
-  }
-};
-var keyS=false;
-document.addEventListener('keydown',function(e){if(e.key==='Shift')keyS=true});
-document.addEventListener('keyup',function(e){if(e.key==='Shift')keyS=false});
 
-/* Camera toggle (V key) */
-document.addEventListener('keydown',function(e){if(e.key==='v'||e.key==='V')Module._toggle_third_person()});
+    // Invincibility timer
+    if (invincible > 0) invincible -= dt;
 
-/* Lock to landscape on mobile */
-if(screen.orientation && screen.orientation.lock){
-  screen.orientation.lock('landscape-primary').catch(function(){});
+    // Combo timer
+    if (comboTimer > 0) {
+        comboTimer -= dt;
+        if (comboTimer <= 0) combo = 0;
+    }
+
+    // Speed increase to road scroll
+    gridOffset += speed * 60 * dt;
+
+    // Check collisions
+    var playerZ = camZ + 60;
+    var playerLaneW = 140;
+
+    // Obstacles
+    for (var i = 0; i < obstacles.length; i++) {
+        var ob = obstacles[i];
+        if (!ob.active || ob.hit) continue;
+        var dz = Math.abs(ob.z - playerZ);
+        if (dz < 40) {
+            var ox = getLaneX(ob.lane, playerZ);
+            var dx = Math.abs(ox - playerX);
+            var hitLateral = dx < playerLaneW * 0.6;
+            var hitVertical = playerY < -30; // not jumped high enough
+
+            if (hitLateral && hitVertical) {
+                ob.hit = true;
+                sfx('hit');
+                lives--;
+                combo = 0;
+                invincible = 1.5;
+                shakeX = (Math.random() - 0.5) * 12;
+                shakeY = (Math.random() - 0.5) * 8;
+                spawnParticles(ob.x || 0, SH * 0.7, '#ff2aff', 20);
+                updateHUD();
+                if (lives <= 0) {
+                    state = 'dead';
+                    gameOverTimer = 0;
+                    sfx('die');
+                    if (score > bestScore) bestScore = score;
+                }
+                break;
+            }
+        }
+    }
+
+    // Collectibles
+    for (var i = 0; i < collectibles.length; i++) {
+        var c = collectibles[i];
+        if (!c.active || c.collected) continue;
+        var dz = Math.abs(c.z - playerZ);
+        if (dz < 45) {
+            var cx = getLaneX(c.lane, playerZ);
+            var dx2 = Math.abs(cx - playerX);
+            if (dx2 < playerLaneW * 0.7) {
+                c.collected = true;
+                if (c.type === 'coin') {
+                    score += 10 + combo * 5;
+                    sfx('coin');
+                } else {
+                    score += 50 + combo * 25;
+                    sfx('egg');
+                }
+                combo++;
+                comboTimer = 3;
+                updateHUD();
+                spawnParticles(0, SH * 0.65, c.type === 'egg' ? '#ff2aff' : '#00ffff', 12);
+            }
+        }
+    }
+
+    // Extend world
+    var maxZ = Math.max(
+        obstacles.length > 0 ? obstacles[obstacles.length - 1].z : 0,
+        collectibles.length > 0 ? collectibles[collectibles.length - 1].z : 0
+    );
+    if (maxZ - camZ < 4000) {
+        for (var i = 0; i < 40; i++) {
+            var z = maxZ + 40 + i * (25 + Math.random() * 35);
+            var lane = Math.floor(Math.random() * 3);
+            if (Math.random() < 0.5) {
+                obstacles.push({ z: z, lane: lane, type: Math.random() < 0.5 ? 'block' : 'drone', active: true, hit: false });
+            } else {
+                collectibles.push({ z: z, lane: lane, type: Math.random() < 0.3 ? 'egg' : 'coin', active: true, collected: false });
+            }
+        }
+    }
+
+    // Clean up far objects
+    while (obstacles.length > 0 && obstacles[0].z < camZ - 100) obstacles.shift();
+    while (collectibles.length > 0 && collectibles[0].z < camZ - 100) collectibles.shift();
+
+    // Particles
+    for (var i = particles.length - 1; i >= 0; i--) {
+        var p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.15;
+        p.life -= dt * 2;
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+
+    // Shake decay
+    shakeX *= 0.9;
+    shakeY *= 0.9;
+
+    // Game over transition
+    if (state === 'dead') {
+        gameOverTimer += dt;
+        if (gameOverTimer > 1.0) {
+            document.getElementById('go-score').textContent = score;
+            document.getElementById('go-best').textContent = bestScore;
+            document.getElementById('gameover').style.display = 'flex';
+        }
+    }
+}
+
+function spawnParticles(sx, sy, color, count) {
+    for (var i = 0; i < count; i++) {
+        particles.push({
+            x: sx + (Math.random() - 0.5) * 60,
+            y: sy + (Math.random() - 0.5) * 20,
+            vx: (Math.random() - 0.5) * 6,
+            vy: -Math.random() * 4 - 1,
+            life: 1,
+            color: color,
+            size: 2 + Math.random() * 3
+        });
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER
+   ═══════════════════════════════════════════════════════════ */
+function render() {
+    var t = frameCount * 0.016;
+
+    // Clear
+    ctx.fillStyle = '#050510';
+    ctx.fillRect(0, 0, SW, SH);
+
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
+
+    // ─── SKY ───
+    var skyGrad = ctx.createLinearGradient(0, 0, 0, VANISH_Y);
+    skyGrad.addColorStop(0, '#050520');
+    skyGrad.addColorStop(0.5, '#0a0a30');
+    skyGrad.addColorStop(0.85, '#201040');
+    skyGrad.addColorStop(1, '#ff2aff');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, SW, VANISH_Y);
+
+    // Stars
+    for (var i = 0; i < 60; i++) {
+        var sx = (Math.sin(i * 127.1) * 43758.5 + 500) % SW;
+        var sy = (Math.sin(i * 311.7) * 43758.5 + 500) % (VANISH_Y - 20);
+        var tw = Math.sin(t * 1.5 + i * 2.3) * 0.4 + 0.6;
+        ctx.globalAlpha = tw * 0.7;
+        ctx.fillStyle = i % 3 === 0 ? '#ff88ff' : '#88ffff';
+        ctx.fillRect(sx, sy, 1.5, 1.5);
+    }
+    ctx.globalAlpha = 1;
+
+    // Sun / moon orb
+    var sunX = SW * 0.5 + Math.sin(t * 0.1) * 40;
+    var sunY = VANISH_Y - 30 + Math.sin(t * 0.15) * 10;
+    var sunR = 35;
+    var sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 2.5);
+    sunGrad.addColorStop(0, 'rgba(255,42,255,.35)');
+    sunGrad.addColorStop(0.4, 'rgba(255,42,255,.1)');
+    sunGrad.addColorStop(1, 'rgba(255,42,255,0)');
+    ctx.fillStyle = sunGrad;
+    ctx.beginPath(); ctx.arc(sunX, sunY, sunR * 2.5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = '#ff2aff';
+    ctx.shadowColor = '#ff2aff';
+    ctx.shadowBlur = 30;
+    ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Horizontal scan lines through sun
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#050510';
+    for (var i = 0; i < 8; i++) {
+        var ly = sunY - sunR + (sunR * 2 * (i + 1)) / 10;
+        var lw = sunR * 0.8 * Math.sin(Math.PI * ((i + 1) / 10));
+        ctx.fillRect(sunX - lw, ly, lw * 2, 2 + i * 0.5);
+    }
+    ctx.globalAlpha = 1;
+
+    // ─── GRID FLOOR ───
+    var horizonY = VANISH_Y;
+
+    // Road + grid - draw from back to front
+    var numSeg = 100;
+    var segDepth = 15;
+    for (var i = numSeg - 1; i >= 0; i--) {
+        var z1 = camZ + i * segDepth;
+        var z2 = camZ + (i + 1) * segDepth;
+        var p1 = projectZ(z1);
+        var p2 = projectZ(z2);
+        if (!p1 || !p2) continue;
+
+        var depth1 = z1 - camZ;
+        var depth2 = z2 - camZ;
+        var fade = 1 - depth1 / (numSeg * segDepth);
+        if (fade < 0) fade = 0;
+
+        // Road curve
+        var segIdx1 = Math.floor((z1 / SEG_LEN) % ROAD_SEGMENTS);
+        var segIdx2 = Math.floor((z2 / SEG_LEN) % ROAD_SEGMENTS);
+        var curve1 = segIdx1 >= 0 && segIdx1 < road.length ? road[segIdx1].curve : 0;
+        var curve2 = segIdx2 >= 0 && segIdx2 < road.length ? road[segIdx2].curve : 0;
+
+        var w1 = ROAD_W * p1.scale;
+        var w2 = ROAD_W * p2.scale;
+        var cx1 = SW / 2 + curve1 * depth1 * 120 * p1.scale;
+        var cx2 = SW / 2 + curve2 * depth2 * 120 * p2.scale;
+
+        var y1 = p1.y;
+        var y2 = p2.y;
+
+        // Road surface
+        var roadAlpha = fade * 0.9;
+        var alternate = (Math.floor((z1 - gridOffset) / segDepth) % 2 === 0);
+
+        // Neon grid lines
+        ctx.strokeStyle = 'rgba(0,255,255,' + (fade * 0.15) + ')';
+        ctx.lineWidth = 1;
+
+        // Horizontal grid lines (depth)
+        ctx.beginPath();
+        ctx.moveTo(cx1 - w1, y1);
+        ctx.lineTo(cx1 + w1, y1);
+        ctx.stroke();
+
+        // Vertical grid lines (lanes)
+        if (i % 3 === 0) {
+            ctx.strokeStyle = 'rgba(128,0,255,' + (fade * 0.12) + ')';
+            ctx.beginPath();
+            ctx.moveTo(cx1 - w1, y1);
+            ctx.lineTo(cx2 - w2, y2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx1 + w1, y1);
+            ctx.lineTo(cx2 + w2, y2);
+            ctx.stroke();
+            // Center line
+            ctx.strokeStyle = 'rgba(255,42,255,' + (fade * 0.08) + ')';
+            ctx.beginPath();
+            ctx.moveTo(cx1, y1);
+            ctx.lineTo(cx2, y2);
+            ctx.stroke();
+        }
+
+        // Road fill (dark surface)
+        var rFill = alternate ? 'rgba(12,8,30,' : 'rgba(8,5,22,';
+        ctx.fillStyle = rFill + (fade * 0.8) + ')';
+        ctx.beginPath();
+        ctx.moveTo(cx1 - w1, y1);
+        ctx.lineTo(cx1 + w1, y1);
+        ctx.lineTo(cx2 + w2, y2);
+        ctx.lineTo(cx2 - w2, y2);
+        ctx.closePath();
+        ctx.fill();
+
+        // Edge glow lines
+        if (fade > 0.3) {
+            ctx.strokeStyle = 'rgba(0,255,255,' + (fade * 0.4) + ')';
+            ctx.lineWidth = 1.5;
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 4 * fade;
+            ctx.beginPath();
+            ctx.moveTo(cx1 - w1, y1);
+            ctx.lineTo(cx2 - w2, y2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx1 + w1, y1);
+            ctx.lineTo(cx2 + w2, y2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    // ─── OBSTACLES ───
+    for (var i = 0; i < obstacles.length; i++) {
+        var ob = obstacles[i];
+        if (!ob.active || ob.hit) continue;
+        var relZ = ob.z - camZ;
+        if (relZ < 5 || relZ > numSeg * segDepth) continue;
+        var sp = projectZ(ob.z);
+        if (!sp) continue;
+        var ox = getLaneX(ob.lane, ob.z);
+        var sx = SW / 2 + ox * sp.scale;
+        var sy = sp.y;
+        var sz = sp.scale;
+
+        if (ob.type === 'block') {
+            // Glitch block — neon wireframe cube
+            var bSize = 30 * sz;
+            if (bSize < 2) continue;
+            var glow = Math.sin(t * 8 + ob.z) * 0.3 + 0.7;
+
+            ctx.strokeStyle = 'rgba(255,42,255,' + (glow * 0.8) + ')';
+            ctx.lineWidth = Math.max(1, sz * 0.8);
+            ctx.shadowColor = '#ff2aff';
+            ctx.shadowBlur = 8 * glow;
+            ctx.strokeRect(sx - bSize / 2, sy - bSize * 1.2, bSize, bSize);
+
+            // Inner glitch lines
+            ctx.strokeStyle = 'rgba(0,255,255,' + (glow * 0.4) + ')';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(sx - bSize / 2, sy - bSize * 0.7);
+            ctx.lineTo(sx + bSize / 2, sy - bSize * 0.7);
+            ctx.moveTo(sx, sy - bSize * 1.2);
+            ctx.lineTo(sx, sy - bSize * 0.2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Fill
+            ctx.fillStyle = 'rgba(128,0,255,' + (glow * 0.15) + ')';
+            ctx.fillRect(sx - bSize / 2, sy - bSize * 1.2, bSize, bSize);
+
+        } else {
+            // Drone — triangular shape with eyes
+            var dSize = 22 * sz;
+            if (dSize < 2) continue;
+            var bob = Math.sin(t * 4 + ob.z * 0.1) * 3 * sz;
+
+            ctx.fillStyle = '#ff2aff';
+            ctx.shadowColor = '#ff2aff';
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - dSize * 1.5 + bob);
+            ctx.lineTo(sx - dSize, sy - dSize * 0.5 + bob);
+            ctx.lineTo(sx + dSize, sy - dSize * 0.5 + bob);
+            ctx.closePath();
+            ctx.fill();
+
+            // Eye
+            ctx.fillStyle = '#ff0000';
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(sx, sy - dSize * 0.8 + bob, dSize * 0.25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    // ─── COLLECTIBLES ───
+    for (var i = 0; i < collectibles.length; i++) {
+        var c = collectibles[i];
+        if (!c.active || c.collected) continue;
+        var relZ = c.z - camZ;
+        if (relZ < 5 || relZ > numSeg * segDepth) continue;
+        var sp2 = projectZ(c.z);
+        if (!sp2) continue;
+        var cx2_ = getLaneX(c.lane, c.z);
+        var sx2 = SW / 2 + cx2_ * sp2.scale;
+        var sy2 = sp2.y;
+        var sz2 = sp2.scale;
+
+        var pulse = Math.sin(t * 5 + c.z) * 0.3 + 0.7;
+
+        if (c.type === 'coin') {
+            // Score coin — glowing circle
+            var r = 10 * sz2;
+            if (r < 1.5) continue;
+            var coinGrad = ctx.createRadialGradient(sx2, sy2 - r * 1.5, 0, sx2, sy2 - r * 1.5, r * 2);
+            coinGrad.addColorStop(0, 'rgba(0,255,255,' + pulse + ')');
+            coinGrad.addColorStop(0.5, 'rgba(0,200,255,' + (pulse * 0.5) + ')');
+            coinGrad.addColorStop(1, 'rgba(0,100,255,0)');
+            ctx.fillStyle = coinGrad;
+            ctx.beginPath();
+            ctx.arc(sx2, sy2 - r * 1.5, r * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#00ffff';
+            ctx.shadowColor = '#00ffff';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(sx2, sy2 - r * 1.5, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        } else {
+            // Easter egg — diamond shape
+            var eSize = 12 * sz2;
+            if (eSize < 1.5) continue;
+            var eggGlow = pulse;
+
+            ctx.fillStyle = '#ff2aff';
+            ctx.shadowColor = '#ff2aff';
+            ctx.shadowBlur = 14 * eggGlow;
+            ctx.beginPath();
+            ctx.moveTo(sx2, sy2 - eSize * 3);
+            ctx.lineTo(sx2 - eSize, sy2 - eSize * 1.8);
+            ctx.lineTo(sx2, sy2 - eSize * 0.6);
+            ctx.lineTo(sx2 + eSize, sy2 - eSize * 1.8);
+            ctx.closePath();
+            ctx.fill();
+
+            // Inner glow
+            ctx.fillStyle = 'rgba(255,150,255,' + (eggGlow * 0.6) + ')';
+            ctx.beginPath();
+            ctx.moveTo(sx2, sy2 - eSize * 2.6);
+            ctx.lineTo(sx2 - eSize * 0.5, sy2 - eSize * 1.8);
+            ctx.lineTo(sx2, sy2 - eSize);
+            ctx.lineTo(sx2 + eSize * 0.5, sy2 - eSize * 1.8);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    // ─── PLAYER ───
+    var playerSx = SW / 2 + playerX * PERSPECTIVE / 60;
+    var playerSy = VANISH_Y + 40 + playerY * 0.3;
+    var pScale = 1.0;
+
+    if (invincible > 0 && Math.sin(t * 20) > 0) {
+        ctx.globalAlpha = 0.4; // blink when hit
+    }
+
+    // Player shadow
+    ctx.fillStyle = 'rgba(128,0,255,0.15)';
+    ctx.beginPath();
+    ctx.ellipse(playerSx, VANISH_Y + 50, 20, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Player body — cyberpunk figure
+    var pH = 40 * pScale; // height
+    var pW = 14 * pScale; // width
+
+    // Legs
+    ctx.fillStyle = '#1a1030';
+    ctx.fillRect(playerSx - pW * 0.6, playerSy - pH * 0.3, pW * 0.4, pH * 0.35);
+    ctx.fillRect(playerSx + pW * 0.2, playerSy - pH * 0.3, pW * 0.4, pH * 0.35);
+
+    // Body
+    ctx.fillStyle = '#2a1050';
+    ctx.fillRect(playerSx - pW * 0.5, playerSy - pH * 0.8, pW, pH * 0.55);
+
+    // Neon trim on body
+    ctx.strokeStyle = '#00ffff';
+    ctx.shadowColor = '#00ffff';
+    ctx.shadowBlur = 6;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(playerSx - pW * 0.5, playerSy - pH * 0.8, pW, pH * 0.55);
+    ctx.shadowBlur = 0;
+
+    // Head
+    ctx.fillStyle = '#2a1850';
+    ctx.fillRect(playerSx - pW * 0.35, playerSy - pH * 1.15, pW * 0.7, pH * 0.4);
+
+    // Visor
+    ctx.fillStyle = '#00ffff';
+    ctx.shadowColor = '#00ffff';
+    ctx.shadowBlur = 8;
+    ctx.fillRect(playerSx - pW * 0.3, playerSy - pH * 1.05, pW * 0.6, pH * 0.08);
+    ctx.shadowBlur = 0;
+
+    // Shoulders
+    ctx.fillStyle = '#ff2aff';
+    ctx.shadowColor = '#ff2aff';
+    ctx.shadowBlur = 4;
+    ctx.fillRect(playerSx - pW * 0.7, playerSy - pH * 0.75, pW * 0.25, pH * 0.08);
+    ctx.fillRect(playerSx + pW * 0.45, playerSy - pH * 0.75, pW * 0.25, pH * 0.08);
+    ctx.shadowBlur = 0;
+
+    // Arms (neon wireframe)
+    ctx.strokeStyle = '#ff2aff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(playerSx - pW * 0.6, playerSy - pH * 0.7);
+    ctx.lineTo(playerSx - pW * 0.8, playerSy - pH * 0.3);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(playerSx + pW * 0.6, playerSy - pH * 0.7);
+    ctx.lineTo(playerSx + pW * 0.8, playerSy - pH * 0.3);
+    ctx.stroke();
+
+    ctx.globalAlpha = 1;
+
+    // ─── PARTICLES ───
+    for (var i = 0; i < particles.length; i++) {
+        var p = particles[i];
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 6;
+        ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+    }
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+
+    // ─── COMBO DISPLAY ───
+    if (combo > 1) {
+        ctx.globalAlpha = Math.min(1, comboTimer);
+        ctx.fillStyle = '#ff2aff';
+        ctx.shadowColor = '#ff2aff';
+        ctx.shadowBlur = 15;
+        ctx.font = 'bold 24px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText('COMBO x' + combo, SW / 2, SH * 0.25);
+        ctx.font = '14px Courier New';
+        ctx.fillStyle = '#00ffff';
+        ctx.fillText('+' + (combo * 5) + ' BONUS', SW / 2, SH * 0.25 + 24);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+    }
+
+    ctx.restore();
+
+    // ─── POST-PROCESSING (vignette + scanlines) ───
+    // Vignette
+    var vigGrad = ctx.createRadialGradient(SW / 2, SH / 2, SH * 0.3, SW / 2, SH / 2, SH * 0.85);
+    vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    vigGrad.addColorStop(1, 'rgba(5,5,16,0.6)');
+    ctx.fillStyle = vigGrad;
+    ctx.fillRect(0, 0, SW, SH);
+
+    // Subtle scanlines
+    ctx.fillStyle = 'rgba(0,0,0,0.04)';
+    for (var y = 0; y < SH; y += 3) {
+        ctx.fillRect(0, y, SW, 1);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HUD UPDATE
+   ═══════════════════════════════════════════════════════════ */
+function updateHUD() {
+    document.getElementById('score-val').textContent = score;
+    document.getElementById('speed-val').textContent = speedMul.toFixed(1) + 'x';
+    var sector = Math.floor(score / 200) + 1;
+    document.getElementById('level-val').textContent = 'SECTOR ' + sector;
+
+    // Lives dots
+    var html = '';
+    for (var i = 0; i < 3; i++) {
+        html += '<div class="lb-dot' + (i >= lives ? ' dead' : '') + '"></div>';
+    }
+    document.getElementById('lives-bar').innerHTML = html;
+
+    var livesHtml = '';
+    for (var i = 0; i < 3; i++) {
+        livesHtml += '<div class="life' + (i >= lives ? ' dead' : '') + '"></div>';
+    }
+    document.getElementById('lives-display').innerHTML = livesHtml;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TITLE SCREEN ANIMATION
+   ═══════════════════════════════════════════════════════════ */
+var titleCv, titleCtx, titleAnimId;
+function drawTitle(t) {
+    if (!titleCv) return;
+    var w = titleCv.width, h = titleCv.height;
+    titleCtx.fillStyle = '#050510';
+    titleCtx.fillRect(0, 0, w, h);
+
+    // Mini grid
+    var rows = 20;
+    for (var i = 0; i < rows; i++) {
+        var y = h * 0.4 + (h * 0.6) * (i / rows);
+        var perspective = (i / rows);
+        var lineY = y;
+        var alpha = perspective * 0.3;
+        titleCtx.strokeStyle = 'rgba(0,255,255,' + alpha + ')';
+        titleCtx.lineWidth = 1;
+        titleCtx.beginPath();
+        titleCtx.moveTo(0, lineY);
+        titleCtx.lineTo(w, lineY);
+        titleCtx.stroke();
+
+        // Vertical lines with perspective
+        for (var j = -5; j <= 5; j++) {
+            var cx = w / 2;
+            var xOff = j * (30 + perspective * 60);
+            xOff += Math.sin(t * 0.001) * 5 * perspective;
+            var x1 = cx + xOff * 0.1;
+            var x2 = cx + xOff;
+            titleCtx.strokeStyle = 'rgba(128,0,255,' + (alpha * 0.6) + ')';
+            titleCtx.beginPath();
+            titleCtx.moveTo(x1, h * 0.4);
+            titleCtx.lineTo(x2, lineY);
+            titleCtx.stroke();
+        }
+    }
+
+    // Sun
+    var sunGrad = titleCtx.createRadialGradient(w / 2, h * 0.35, 0, w / 2, h * 0.35, 40);
+    sunGrad.addColorStop(0, 'rgba(255,42,255,.4)');
+    sunGrad.addColorStop(1, 'rgba(255,42,255,0)');
+    titleCtx.fillStyle = sunGrad;
+    titleCtx.beginPath(); titleCtx.arc(w / 2, h * 0.35, 40, 0, Math.PI * 2); titleCtx.fill();
+    titleCtx.fillStyle = '#ff2aff';
+    titleCtx.beginPath(); titleCtx.arc(w / 2, h * 0.35, 15, 0, Math.PI * 2); titleCtx.fill();
+}
+function animateTitle(t) {
+    drawTitle(t);
+    titleAnimId = requestAnimationFrame(animateTitle);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN LOOP
+   ═══════════════════════════════════════════════════════════ */
+function resize() {
+    var dpr = window.devicePixelRatio || 1;
+    cv.width = SW * dpr;
+    cv.height = SH * dpr;
+    cv.style.width = '100%';
+    cv.style.height = '100%';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function startGame() {
+    state = 'playing';
+    resetGame();
+}
+
+function gameLoop(timestamp) {
+    var dt = 1 / 60; // fixed timestep
+    handleInput(dt);
+    update(dt);
+    render();
+    requestAnimationFrame(gameLoop);
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+function boot() {
+    cv = document.getElementById('c');
+    ctx = cv.getContext('2d');
+    resize();
+    window.addEventListener('resize', resize);
+
+    titleCv = document.getElementById('title-bg');
+    titleCtx = titleCv.getContext('2d');
+
+    // Hide loading, show title
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('title').style.display = 'flex';
+    animateTitle(0);
+
+    // Title click → start
+    document.getElementById('title').onclick = function() {
+        cancelAnimationFrame(titleAnimId);
+        document.getElementById('title').style.display = 'none';
+        initAudio();
+        startGame();
+        requestAnimationFrame(gameLoop);
+    };
+
+    // Game over click → restart
+    document.getElementById('gameover').onclick = function() {
+        document.getElementById('gameover').style.display = 'none';
+        startGame();
+    };
+}
+
+// Start when DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+} else {
+    boot();
 }
 </script>
-<script src="game.js"></script>
 </body>
 </html>
