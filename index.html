@@ -192,7 +192,7 @@ function initWorld(){
   coins=[];enemies=[];structures=[];particles=[];floatingTexts=[];
   for(var i=0;i<40;i++){coins.push({x:(Math.random()-0.5)*80,z:Math.random()*60-10,
     y:1.5+Math.random()*2,bobPhase:Math.random()*Math.PI*2,collected:false,radius:0.6,spin:Math.random()*2+1});}
-  for(var i=0;i<8;i++){enemies.push({x:(Math.random()-0.5)*60,z:Math.random()*50,y:1.2,
+  for(var i=0;i<12;i++){var ea=Math.random()*Math.PI*2,er=12+Math.random()*25;enemies.push({x:playerX+Math.cos(ea)*er,z:playerZ+Math.sin(ea)*er,y:1.2,
     health:3,maxHealth:3,speed:1.5+Math.random(),damage:8,alive:true,hitTimer:0,
     bobPhase:Math.random()*Math.PI*2,radius:1.0,
     type:['drone','crawler','turret'][Math.floor(Math.random()*3)]});}
@@ -391,7 +391,7 @@ function update(dt){
     if(playerY<=0){playerY=0;playerVelY=0;playerGrounded=true;}}
   if((keys[' ']||mcJump)&&playerGrounded){playerVelY=8;playerGrounded=false;sfx('jump');mcJump=false;keys[' ']=false;}
   playerX=Math.max(-38,Math.min(38,playerX));playerZ=Math.max(-15,Math.min(45,playerZ));
-  camX=playerX-Math.cos(playerAngle)*camDist;camZ=playerZ-Math.sin(playerAngle)*camDist;camAngle=playerAngle;
+  camX=playerX+Math.cos(playerAngle)*camDist;camZ=playerZ+Math.sin(playerAngle)*camDist;camAngle=playerAngle+Math.PI;
   var doAttack=mcAttack&&playerAttackCooldown<=0;
   if(doAttack){mcAttack=false;isAttacking=true;attackAnim=1;playerAttackCooldown=0.4;sfx('attack');
     document.getElementById('attack-indicator').classList.add('show');
@@ -414,8 +414,8 @@ function update(dt){
       if(playerHealth<=0){playerHealth=0;state='dead';sfx('death');
         setTimeout(function(){if(confirm('Defeated! Score: '+score+'\nRestart?'))restartGame();},500);}}
     e.bobPhase+=dt;});
-  enemies.forEach(function(e){if(!e.alive&&Math.random()<0.002){e.alive=true;e.health=e.maxHealth;
-    e.x=playerX+(Math.random()-0.5)*60;e.z=playerZ+(Math.random()-0.5)*60;
+  enemies.forEach(function(e){if(!e.alive&&Math.random()<0.003){e.alive=true;e.health=e.maxHealth;
+    var ra=Math.random()*Math.PI*2,rr=15+Math.random()*20;e.x=playerX+Math.cos(ra)*rr;e.z=playerZ+Math.sin(ra)*rr;
     e.x=Math.max(-38,Math.min(38,e.x));e.z=Math.max(-15,Math.min(45,e.z));}});
   coins.forEach(function(c){if(c.collected&&Math.random()<0.005){c.collected=false;
     c.x=playerX+(Math.random()-0.5)*50;c.z=playerZ+(Math.random()-0.5)*50;
@@ -473,7 +473,7 @@ function boot(){
   function jackIn(){if(jackedIn)return;jackedIn=true;cancelAnimationFrame(titleAnimId);
     document.getElementById('title').style.display='none';initAudio();initWorld();state='playing';
     playerX=0;playerZ=20;playerAngle=Math.PI;
-    camX=playerX-Math.cos(playerAngle)*camDist;camZ=playerZ-Math.sin(playerAngle)*camDist;camAngle=playerAngle;
+    camX=playerX+Math.cos(playerAngle)*camDist;camZ=playerZ+Math.sin(playerAngle)*camDist;camAngle=playerAngle+Math.PI;
     requestAnimationFrame(gameLoop);}
   document.getElementById('title').addEventListener('click',jackIn);
   document.getElementById('title').addEventListener('touchend',function(e){e.preventDefault();jackIn();});
