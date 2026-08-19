@@ -165,6 +165,15 @@ function playSound(type) {
                 gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
                 osc.start(t); osc.stop(t + 0.12);
                 break;
+            case 5: // Door creak
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, t);
+                osc.frequency.linearRampToValueAtTime(80, t + 0.15);
+                osc.frequency.linearRampToValueAtTime(150, t + 0.25);
+                gain.gain.setValueAtTime(0.06, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+                osc.start(t); osc.stop(t + 0.3);
+                break;
         }
     } catch(e) {}
 }
