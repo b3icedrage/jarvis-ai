@@ -3,442 +3,844 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>OASIS — Cyberpunk Arcade</title>
+<title>OASIS — The Hub</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#050510;
   font-family:'Courier New',Courier,monospace;touch-action:none;user-select:none}
-#wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
-canvas{width:100%;height:100%;display:block}
+canvas{display:block;width:100%;height:100%}
 
 /* HUD */
 #hud{position:absolute;top:0;left:0;right:0;padding:10px 16px;
-  display:flex;justify-content:space-between;align-items:center;
+  display:flex;justify-content:space-between;align-items:flex-start;
   pointer-events:none;z-index:10;
-  background:linear-gradient(180deg,rgba(5,5,16,.85) 0%,rgba(5,5,16,0) 100%)}
-.hud-left,.hud-right{display:flex;flex-direction:column;gap:2px}
-.hud-center{display:flex;flex-direction:column;align-items:center;gap:2px}
-.hud-label{font-size:9px;letter-spacing:3px;color:rgba(180,120,255,.6);text-transform:uppercase}
-.hud-value{font-size:20px;font-weight:bold;color:#ff2aff;
-  text-shadow:0 0 10px rgba(255,42,255,.6),0 0 20px rgba(255,42,255,.3);letter-spacing:2px}
-.hud-score{font-size:28px;font-weight:bold;color:#00ffff;
-  text-shadow:0 0 12px rgba(0,255,255,.6),0 0 24px rgba(0,255,255,.3);letter-spacing:3px}
-.hud-lives{display:flex;gap:6px;margin-top:2px}
-.life{width:12px;height:12px;border-radius:50%;
-  background:radial-gradient(circle,#ff2aff,#cc00cc);
-  box-shadow:0 0 6px rgba(255,42,255,.6);transition:opacity .3s}
-.life.dead{opacity:.15;box-shadow:none}
-.hud-speed{font-size:10px;color:rgba(0,255,255,.5);letter-spacing:1px}
+  background:linear-gradient(180deg,rgba(5,5,16,.7) 0%,transparent 100%)}
+.hud-label{font-size:8px;letter-spacing:3px;color:rgba(0,255,255,.5);text-transform:uppercase}
+.hud-val{font-size:16px;font-weight:bold;color:#00ffff;
+  text-shadow:0 0 8px rgba(0,255,255,.5);letter-spacing:2px}
+#interact-hint{position:absolute;bottom:80px;left:50%;transform:translateX(-50%);
+  font-size:12px;color:rgba(0,255,255,.7);letter-spacing:2px;pointer-events:none;z-index:10;
+  text-shadow:0 0 8px rgba(0,255,255,.4);opacity:0;transition:opacity .3s}
+#interact-hint.show{opacity:1}
 
-/* Title Screen */
+/* Crosshair */
+#crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:20px;height:20px;pointer-events:none;z-index:10;opacity:.4}
+#crosshair::before,#crosshair::after{content:'';position:absolute;background:#00ffff;
+  box-shadow:0 0 4px #00ffff}
+#crosshair::before{width:12px;height:2px;top:9px;left:4px}
+#crosshair::after{width:2px;height:12px;top:4px;left:9px}
+
+/* Dialog */
+#dialog{position:absolute;bottom:120px;left:50%;transform:translateX(-50%);
+  background:rgba(10,5,30,.9);border:1px solid rgba(0,255,255,.3);border-radius:6px;
+  padding:14px 20px;max-width:420px;width:90%;pointer-events:none;z-index:15;
+  opacity:0;transition:opacity .3s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#dialog.show{opacity:1}
+#dialog .npc-name{font-size:11px;letter-spacing:3px;color:#ff2aff;margin-bottom:6px;
+  text-shadow:0 0 6px rgba(255,42,255,.4)}
+#dialog .npc-text{font-size:12px;color:rgba(255,255,255,.8);line-height:1.7;letter-spacing:1px}
+#dialog .npc-hint{font-size:9px;color:rgba(0,255,255,.4);margin-top:8px;letter-spacing:2px}
+
+/* Mobile controls */
+#mobile-controls{position:absolute;bottom:0;left:0;right:0;height:40%;z-index:20;display:none}
+#mc-move{position:absolute;bottom:20px;left:20px;width:120px;height:120px;border-radius:50%;
+  background:rgba(0,255,255,.06);border:2px solid rgba(0,255,255,.15)}
+#mc-knob{width:36px;height:36px;border-radius:50%;position:absolute;
+  background:radial-gradient(circle,rgba(0,255,255,.3),rgba(0,255,255,.1));
+  top:42px;left:42px;pointer-events:none}
+#mc-look{position:absolute;bottom:20px;right:20px;width:120px;height:120px;border-radius:50%;
+  background:rgba(255,42,255,.06);border:2px solid rgba(255,42,255,.15)}
+#mc-look-knob{width:36px;height:36px;border-radius:50%;position:absolute;
+  background:radial-gradient(circle,rgba(255,42,255,.3),rgba(255,42,255,.1));
+  top:42px;left:42px;pointer-events:none}
+#mc-interact{position:absolute;bottom:100px;right:50%;transform:translateX(80px);
+  width:50px;height:50px;border-radius:50%;
+  background:rgba(0,255,255,.1);border:2px solid rgba(0,255,255,.2);
+  display:flex;align-items:center;justify-content:center;color:rgba(0,255,255,.6);font-size:20px}
+
+/* Title */
 #title{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;
   align-items:center;justify-content:center;background:rgba(5,5,16,.97);cursor:pointer}
-#title canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.4}
+#title canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.35}
 #title-content{position:relative;z-index:2;text-align:center;padding:0 24px}
-#title h1{font-size:clamp(32px,10vw,72px);letter-spacing:16px;
-  text-shadow:0 0 30px rgba(0,255,255,.6),0 0 60px rgba(255,42,255,.4),0 0 100px rgba(128,0,255,.2);
+#title h1{font-size:clamp(36px,10vw,80px);letter-spacing:18px;
+  text-shadow:0 0 30px rgba(0,255,255,.5),0 0 60px rgba(255,42,255,.3),0 0 100px rgba(128,0,255,.2);
   color:#00ffff;animation:tg 3s ease-in-out infinite}
-@keyframes tg{0%,100%{text-shadow:0 0 30px rgba(0,255,255,.6),0 0 60px rgba(255,42,255,.4)}
-  50%{text-shadow:0 0 40px rgba(0,255,255,.8),0 0 80px rgba(255,42,255,.6),0 0 120px rgba(128,0,255,.3)}}
-#title .sub{font-size:clamp(10px,2.5vw,14px);margin:10px 0 28px;opacity:.6;letter-spacing:6px;color:#ff2aff}
-#title .inst{font-size:clamp(9px,2vw,12px);line-height:2.2;opacity:.4;max-width:400px;margin:0 auto;
-  border:1px solid rgba(128,0,255,.2);border-radius:4px;padding:14px 18px}
-#title .start{margin-top:28px;font-size:clamp(13px,3.5vw,20px);letter-spacing:4px;
+@keyframes tg{0%,100%{text-shadow:0 0 30px rgba(0,255,255,.5),0 0 60px rgba(255,42,255,.3)}
+  50%{text-shadow:0 0 40px rgba(0,255,255,.7),0 0 80px rgba(255,42,255,.5),0 0 120px rgba(128,0,255,.3)}}
+#title .sub{font-size:clamp(10px,2.5vw,14px);margin:10px 0 24px;opacity:.55;letter-spacing:8px;color:#ff2aff}
+#title .desc{font-size:clamp(9px,2vw,11px);line-height:2.2;opacity:.35;max-width:440px;margin:0 auto;
+  border:1px solid rgba(128,0,255,.15);border-radius:4px;padding:14px 18px}
+#title .enter{margin-top:26px;font-size:clamp(13px,3.5vw,18px);letter-spacing:5px;
   animation:pulse 2s ease-in-out infinite;color:#00ffff}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.97)}}
-
-/* Game Over */
-#gameover{position:absolute;inset:0;z-index:35;display:none;flex-direction:column;
-  align-items:center;justify-content:center;background:rgba(5,5,16,.95);cursor:pointer}
-#gameover h2{font-size:clamp(28px,8vw,56px);letter-spacing:10px;margin-bottom:8px;
-  background:linear-gradient(90deg,#ff2aff,#00ffff);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  background-clip:text}
-#gameover .go-sub{font-size:clamp(12px,3vw,18px);color:rgba(255,255,255,.5);margin-bottom:6px;letter-spacing:3px}
-#gameover .go-score{font-size:clamp(22px,6vw,40px);color:#00ffff;margin-bottom:20px;letter-spacing:4px;
-  text-shadow:0 0 15px rgba(0,255,255,.5)}
-#gameover .go-best{font-size:clamp(11px,2.5vw,14px);color:rgba(255,42,255,.6);margin-bottom:24px;letter-spacing:2px}
-#gameover .restart{font-size:clamp(13px,3vw,18px);color:#00ffff;animation:pulse 2s ease-in-out infinite;letter-spacing:4px;
-  border:1px solid rgba(0,255,255,.3);padding:10px 28px;border-radius:4px}
-
-/* Touch Controls */
-.touch-zone{position:absolute;z-index:20;bottom:0;height:45%;width:33%;opacity:0}
-#tz-left{left:0}
-#tz-mid{left:33%;width:34%}
-#tz-right{right:0}
-.touch-jump{position:absolute;z-index:20;top:0;right:0;width:25%;height:30%;opacity:0}
-
-/* Lives bar at bottom */
-#lives-bar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
-  display:flex;gap:8px;z-index:10;pointer-events:none}
-.lb-dot{width:10px;height:10px;border-radius:50%;
-  background:radial-gradient(circle,#ff2aff,#aa00aa);
-  box-shadow:0 0 8px rgba(255,42,255,.5);transition:all .3s}
-.lb-dot.dead{background:#221;box-shadow:none}
-
-/* Loading */
-#loading{position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;background:#050510;color:#00ffff}
-.spin{width:32px;height:32px;border:3px solid rgba(128,0,255,.3);border-top-color:#00ffff;
-  border-radius:50%;animation:sp .8s linear infinite;margin-bottom:14px;
-  box-shadow:0 0 12px rgba(0,255,255,.2)}
-@keyframes sp{to{transform:rotate(360deg)}}
-#loading .status{font-size:11px;opacity:.5;letter-spacing:3px}
 </style>
 </head>
 <body>
 
-<div id="loading">
-  <div class="spin"></div>
-  <div class="status">INITIALIZING THE OASIS…</div>
-</div>
-
-<div id="title" style="display:none">
+<div id="title">
   <canvas id="title-bg" width="400" height="300"></canvas>
   <div id="title-content">
     <h1>OASIS</h1>
-    <div class="sub">CYBERPUNK ARCADE</div>
-    <div class="inst">
-      You are a digital avatar inside the OASIS.<br>
-      Dash through the neon grid, dodge glitch blocks and rogue drones,<br>
-      and collect Easter Eggs and Score Coins to survive.<br><br>
-      <b>⌨️ Keyboard:</b> ← → or A/D to move · SPACE to jump<br>
-      <b>📱 Touch:</b> Left/Center/Right zones to move · Top-right to jump<br><br>
-      <span style="color:#ff2aff">3 lives · Speed increases over time</span>
+    <div class="sub">THE HUB</div>
+    <div class="desc">
+      Step into the grand hall of the OASIS — a vast cyberpunk sanctuary<br>
+      where holographic avatars mingle beneath a cathedral of light.<br><br>
+      <b>⌨️ WASD</b> to move · <b>Mouse</b> to look · <b>E</b> to interact<br>
+      <b>📱 Touch</b> left stick to move, right stick to look, tap center to interact<br><br>
+      <span style="color:#ff2aff">Walk around. Talk to the avatars. Explore the hub.</span>
     </div>
-    <div class="start">[ TAP TO JACK IN ]</div>
+    <div class="enter">[ JACK IN ]</div>
   </div>
 </div>
 
-<div id="gameover">
-  <h2>DISCONNECTED</h2>
-  <div class="go-sub">Your avatar was derezzed</div>
-  <div class="go-score">SCORE: <span id="go-score">0</span></div>
-  <div class="go-best">BEST: <span id="go-best">0</span></div>
-  <div class="restart">[ RECONNECT ]</div>
+<div id="hud">
+  <div><div class="hud-label">LOCATION</div><div class="hud-val">OASIS HUB</div></div>
+  <div style="text-align:right"><div class="hud-label">NPCS</div><div class="hud-val" id="npc-count">0</div></div>
 </div>
 
-<div id="wrap">
-  <canvas id="c"></canvas>
-  <div id="hud">
-    <div class="hud-left">
-      <div class="hud-label">SCORE</div>
-      <div class="hud-score" id="score-val">0</div>
-    </div>
-    <div class="hud-center">
-      <div class="hud-label">LIVES</div>
-      <div class="hud-lives" id="lives-display"></div>
-    </div>
-    <div class="hud-right">
-      <div class="hud-label">SPEED</div>
-      <div class="hud-value" id="speed-val">1x</div>
-      <div class="hud-speed" id="level-val">SECTOR 1</div>
-    </div>
-  </div>
-  <div id="lives-bar"></div>
-  <div class="touch-zone" id="tz-left"></div>
-  <div class="touch-zone" id="tz-mid"></div>
-  <div class="touch-zone" id="tz-right"></div>
-  <div class="touch-jump" id="tz-jump"></div>
+<div id="crosshair"></div>
+<div id="interact-hint">[ E ] TALK</div>
+
+<div id="dialog">
+  <div class="npc-name" id="dialog-name"></div>
+  <div class="npc-text" id="dialog-text"></div>
+  <div class="npc-hint">[ E ] to close</div>
 </div>
+
+<div id="mobile-controls">
+  <div id="mc-move"><div id="mc-knob"></div></div>
+  <div id="mc-look"><div id="mc-look-knob"></div></div>
+  <div id="mc-interact">💬</div>
+</div>
+
+<canvas id="c"></canvas>
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   AUDIO ENGINE — Synthwave Sounds
+   AUDIO — Synthwave Ambient Engine
    ═══════════════════════════════════════════════════════════ */
-var AC = null;
+var AC = null, ambientGain = null;
 function initAudio() {
     AC = new (window.AudioContext || window.webkitAudioContext)();
+    // Deep ambient drone
+    var buf = AC.createBuffer(2, AC.sampleRate * 6, AC.sampleRate);
+    for (var ch = 0; ch < 2; ch++) {
+        var d = buf.getChannelData(ch);
+        var prev = 0;
+        for (var i = 0; i < d.length; i++) {
+            var w = Math.random() * 2 - 1;
+            d[i] = (prev + 0.015 * w) / 1.015;
+            prev = d[i];
+            d[i] *= 5;
+        }
+    }
+    var src = AC.createBufferSource(); src.buffer = buf; src.loop = true;
+    var lpf = AC.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 180;
+    ambientGain = AC.createGain(); ambientGain.gain.value = 0.08;
+    src.connect(lpf); lpf.connect(ambientGain); ambientGain.connect(AC.destination);
+    src.start();
+
+    // Pad chord
+    [130.81, 164.81, 196.00, 261.63].forEach(function(f) {
+        var o = AC.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+        var g = AC.createGain(); g.gain.value = 0.015;
+        var lfo = AC.createOscillator(); lfo.frequency.value = 0.1 + Math.random() * 0.1;
+        var lfoG = AC.createGain(); lfoG.gain.value = 0.005;
+        lfo.connect(lfoG); lfoG.connect(g.gain);
+        o.connect(g); g.connect(AC.destination);
+        o.start(); lfo.start();
+    });
 }
 
 function sfx(type) {
     if (!AC) return;
-    try {
-        var t = AC.currentTime;
-        switch(type) {
-            case 'move': {
-                var o = AC.createOscillator(), g = AC.createGain();
-                o.type = 'square'; o.frequency.value = 440;
-                g.gain.setValueAtTime(0.06, t);
-                g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-                o.connect(g); g.connect(AC.destination);
-                o.start(t); o.stop(t + 0.06);
-                break;
-            }
-            case 'jump': {
-                var o = AC.createOscillator(), g = AC.createGain();
-                o.type = 'sawtooth';
-                o.frequency.setValueAtTime(200, t);
-                o.frequency.exponentialRampToValueAtTime(800, t + 0.15);
-                g.gain.setValueAtTime(0.1, t);
-                g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-                o.connect(g); g.connect(AC.destination);
-                o.start(t); o.stop(t + 0.2);
-                break;
-            }
-            case 'coin': {
-                [800, 1000, 1200].forEach(function(f, i) {
-                    var o = AC.createOscillator(), g = AC.createGain();
-                    o.type = 'sine'; o.frequency.value = f;
-                    g.gain.setValueAtTime(0.08, t + i * 0.05);
-                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.15 + i * 0.05);
-                    o.connect(g); g.connect(AC.destination);
-                    o.start(t + i * 0.05); o.stop(t + 0.18 + i * 0.05);
-                });
-                break;
-            }
-            case 'egg': {
-                [600, 800, 1000, 1400].forEach(function(f, i) {
-                    var o = AC.createOscillator(), g = AC.createGain();
-                    o.type = 'sine'; o.frequency.value = f;
-                    g.gain.setValueAtTime(0.07, t + i * 0.04);
-                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.2 + i * 0.04);
-                    o.connect(g); g.connect(AC.destination);
-                    o.start(t + i * 0.04); o.stop(t + 0.25 + i * 0.04);
-                });
-                break;
-            }
-            case 'hit': {
-                var o = AC.createOscillator(), g = AC.createGain();
-                o.type = 'sawtooth';
-                o.frequency.setValueAtTime(300, t);
-                o.frequency.exponentialRampToValueAtTime(40, t + 0.5);
-                g.gain.setValueAtTime(0.15, t);
-                g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-                o.connect(g); g.connect(AC.destination);
-                o.start(t); o.stop(t + 0.5);
-                // noise burst
-                var buf = AC.createBuffer(1, AC.sampleRate * 0.2, AC.sampleRate);
-                var d = buf.getChannelData(0);
-                for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
-                var ns = AC.createBufferSource(); ns.buffer = buf;
-                var ng = AC.createGain();
-                ng.gain.setValueAtTime(0.2, t);
-                ng.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-                ns.connect(ng); ng.connect(AC.destination);
-                ns.start(t); ns.stop(t + 0.2);
-                break;
-            }
-            case 'die': {
-                for (var n = 0; n < 3; n++) {
-                    var o = AC.createOscillator(), g = AC.createGain();
-                    o.type = 'sawtooth';
-                    o.frequency.setValueAtTime(200 - n * 50, t + n * 0.12);
-                    o.frequency.exponentialRampToValueAtTime(30, t + 0.6 + n * 0.12);
-                    g.gain.setValueAtTime(0.12, t + n * 0.12);
-                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.7 + n * 0.12);
-                    o.connect(g); g.connect(AC.destination);
-                    o.start(t + n * 0.12); o.stop(t + 0.8);
-                }
-                break;
-            }
+    var t = AC.currentTime;
+    switch(type) {
+        case 'step': {
+            var o = AC.createOscillator(), g = AC.createGain();
+            o.type = 'triangle'; o.frequency.value = 60 + Math.random() * 30;
+            g.gain.setValueAtTime(0.04, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+            o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + 0.08);
+            break;
         }
-    } catch(e) {}
+        case 'interact': {
+            [500, 700, 900].forEach(function(f, i) {
+                var o = AC.createOscillator(), g = AC.createGain();
+                o.type = 'sine'; o.frequency.value = f;
+                g.gain.setValueAtTime(0.07, t + i * 0.05);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.2 + i * 0.05);
+                o.connect(g); g.connect(AC.destination);
+                o.start(t + i * 0.05); o.stop(t + 0.25 + i * 0.05);
+            });
+            break;
+        }
+        case 'close': {
+            var o = AC.createOscillator(), g = AC.createGain();
+            o.type = 'sine'; o.frequency.value = 600;
+            g.gain.setValueAtTime(0.05, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+            o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + 0.1);
+            break;
+        }
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   3D PERSPECTIVE ENGINE
+   3D ENGINE — First Person Hub World
    ═══════════════════════════════════════════════════════════ */
 var cv, W, H, ctx;
-var SW = 900, SH = 500; // virtual resolution
-var PERSPECTIVE = 280; // camera focal length
-var VANISH_Y = SH * 0.42; // horizon line
-var ROAD_SEGMENTS = 200;
-var ROAD_W = 1800; // half-width of road
-var SEG_LEN = 8;
+var SW = 960, SH = 540;
 
 // Camera
-var camZ = 0;
-var speed = 0;
-var baseSpeed = 3.5;
-var maxSpeed = 12;
-var accel = 0;
-var speedMul = 1;
+var camX = 0, camZ = 30, camAngle = Math.PI; // looking toward center
+var camPitch = 0;
+var moveSpeed = 8;
+var lookSpeed = 0.003;
 
-// Player
-var playerLane = 1; // 0=left, 1=center, 2=right
-var playerTargetX = 0;
-var playerX = 0;
-var playerY = 0; // vertical offset (jump)
-var playerVelY = 0;
-var isJumping = false;
-var lives = 3;
-var score = 0;
-var bestScore = 0;
-var combo = 0;
-var comboTimer = 0;
-var invincible = 0;
+// Input
+var keys = {};
+var mouseDX = 0, mouseDY = 0;
+var pointerLocked = false;
+var moveX = 0, moveZ = 0; // from joystick
+var lookDX = 0, lookDY = 0; // from mobile joystick
+var headBob = 0;
+var stepTimer = 0;
 
-// Road
-var road = [];
-var curvature = 0;
-var targetCurve = 0;
+document.addEventListener('keydown', function(e) {
+    keys[e.key] = true;
+    if (['w','a','s','d','W','A','S','D','e','E',' '].includes(e.key)) e.preventDefault();
+});
+document.addEventListener('keyup', function(e) { keys[e.key] = false; });
+document.addEventListener('mousemove', function(e) {
+    if (pointerLocked) { camAngle += e.movementX * lookSpeed; camPitch += e.movementY * lookSpeed; }
+});
+document.addEventListener('pointerlockchange', function() { pointerLocked = !!document.pointerLockElement; });
+cv = document.getElementById('c');
+cv.addEventListener('click', function() {
+    if (state === 'playing' && !pointerLocked) cv.requestPointerLock();
+});
 
-// Objects
-var obstacles = []; // {z, lane, type, active}
-var collectibles = []; // {z, lane, type, active, collected}
+// Mobile controls
+var mcLeft = false, mcRight = false, mcFwd = false, mcBack = false;
+var mcLookX = 0, mcLookY = 0;
+var mcInteract = false;
+var mcMoveEl = document.getElementById('mc-move'), mcKnob = document.getElementById('mc-knob');
+var mcLookEl = document.getElementById('mc-look'), mcLookKnob = document.getElementById('mc-look-knob');
+var mcMoveTouch = null, mcLookTouch = null;
+
+function isMobile() { return 'ontouchstart' in window || navigator.maxTouchPoints > 0; }
+if (isMobile()) document.getElementById('mobile-controls').style.display = 'block';
+
+mcMoveEl.addEventListener('touchstart', function(e) { e.preventDefault(); mcMoveTouch = e.changedTouches[0]; });
+document.addEventListener('touchmove', function(e) {
+    if (mcMoveTouch) {
+        for (var i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier !== mcMoveTouch.identifier) continue;
+            var r = mcMoveEl.getBoundingClientRect(), cx = r.width / 2, cy = r.height / 2;
+            var dx = e.changedTouches[i].clientX - r.left - cx;
+            var dy = e.changedTouches[i].clientY - r.top - cy;
+            var d = Math.sqrt(dx * dx + dy * dy), mx = cx - 18;
+            if (d > mx) { dx = dx / d * mx; dy = dy / d * mx; }
+            mcKnob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+            mcFwd = dy < -10; mcBack = dy > 10; mcLeft = dx < -10; mcRight = dx > 10;
+        }
+    }
+    if (mcLookTouch) {
+        for (var i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier !== mcLookTouch.identifier) continue;
+            var r = mcLookEl.getBoundingClientRect(), cx = r.width / 2, cy = r.height / 2;
+            var dx = e.changedTouches[i].clientX - r.left - cx;
+            var dy = e.changedTouches[i].clientY - r.top - cy;
+            mcLookKnob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+            lookDX = dx * 0.004; lookDY = dy * 0.004;
+        }
+    }
+});
+function mcEnd(e) {
+    for (var i = 0; i < e.changedTouches.length; i++) {
+        if (mcMoveTouch && e.changedTouches[i].identifier === mcMoveTouch.identifier) {
+            mcMoveTouch = null; mcFwd = mcBack = mcLeft = mcRight = false;
+            mcKnob.style.transform = 'translate(0,0)';
+        }
+        if (mcLookTouch && e.changedTouches[i].identifier === mcLookTouch.identifier) {
+            mcLookTouch = null; lookDX = lookDY = 0;
+            mcLookKnob.style.transform = 'translate(0,0)';
+        }
+    }
+}
+document.addEventListener('touchend', mcEnd); document.addEventListener('touchcancel', mcEnd);
+mcLookEl.addEventListener('touchstart', function(e) { e.preventDefault(); mcLookTouch = e.changedTouches[0]; });
+document.getElementById('mc-interact').addEventListener('touchstart', function(e) { e.preventDefault(); mcInteract = true; });
+document.getElementById('mc-interact').addEventListener('touchend', function() { mcInteract = false; });
+
+/* ═══════════════════════════════════════════════════════════
+   NPC SYSTEM
+   ═══════════════════════════════════════════════════════════ */
+var NPC_DEFS = [
+    { name: 'ART3MIS', color: '#ff2aff', accentColor: '#ff88ff', x: -15, z: 10, angle: 0.5,
+      lines: ['Welcome to the Hub, challenger.', 'The Stacks are gone. This is the new reality.', 'Seek the Easter Egg beyond the Grand Staircase.', 'Remember: the OASIS rewards the curious.'] },
+    { name: "DITO", color: '#00ffff', accentColor: '#88ffff', x: 18, z: 15, angle: -0.3,
+      lines: ['Yo! Heard you just jacked in.', 'This hall was built by the Sux0rz guild.', 'Check the pillars — hidden portals behind them.', 'Stay frosty, the Sixers patrol at night.'] },
+    { name: 'Aech', color: '#ff8800', accentColor: '#ffbb44', x: -8, z: 25, angle: 2.8,
+      lines: ["Hey there. I'm Aech.", 'This staircase leads to the Race Gateway.', 'But you need a Flyship key first.', 'Try talking to everyone — someone knows something.'] },
+    { name: 'Shoto', color: '#44ff44', accentColor: '#88ff88', x: 12, z: 30, angle: 1.2,
+      lines: ['The Sixers have eyes everywhere.', 'But not here. Not in the Hub.', 'This is sanctuary. Even IOI respects the truce.', 'Explore. The Hall of Heroes awaits upstairs.'] },
+    { name: 'Kira', color: '#ff4488', accentColor: '#ff88bb', x: -20, z: 35, angle: 0.1,
+      lines: ["I'm Sorrento's worst nightmare.", 'The Gregarious Games challenge is at the top.', 'Collect 3 keys from the NPC quests.', 'Then face the final gate.'] },
+    { name: 'IR0N_GIANT', color: '#aaaacc', accentColor: '#ccccff', x: 25, z: 8, angle: -1.5,
+      lines: ['*BZZT* ...systems... nominal.', 'I guard the eastern corridor.', 'The orb of omniscience sees all.', 'Step closer to the energy sphere if you dare.'] },
+    { name: 'ORACLE', color: '#ffff00', accentColor: '#ffff88', x: 0, z: 42, angle: 0,
+      lines: ['I see all timelines in the OASIS.', 'One path leads to the Egg. One leads to ruin.', 'The choice is always yours, Gunter.', 'Look behind the waterfall of light.'] },
+    { name: 'JOURNEY', color: '#8844ff', accentColor: '#aa88ff', x: -25, z: 20, angle: 1.8,
+      lines: ['The Hall of Reflections holds memories.', 'Every avatar here has a story.', 'Mine begins in the Stacks of Columbus.', "What's yours?" ] },
+    { name: 'NIBBLE', color: '#ff6644', accentColor: '#ff9988', x: 22, z: 38, angle: -0.8,
+      lines: ['Psst... over here.', 'I sell power-ups. Not really. But I know where they are.', 'The green glow behind the left pillar? That\'s a health regen.', 'Come back after midnight cycle for rare spawns.'] },
+    { name: 'T_KERNEL', color: '#00ff88', accentColor: '#66ffbb', x: 5, z: 18, angle: 3.5,
+      lines: ['*typing* ...Compiling reality matrix...', 'The dome above was coded by Halliday himself.', 'Every light beam is a data stream.', 'Follow the cyan beam to find the archive.'] }
+];
+
+var npcs = [];
+function initNPCs() {
+    npcs = NPC_DEFS.map(function(d) {
+        return {
+            name: d.name, color: d.color, accentColor: d.accentColor,
+            x: d.x, z: d.z, angle: d.angle,
+            baseX: d.x, baseZ: d.z,
+            lines: d.lines, lineIdx: 0,
+            walkPhase: Math.random() * Math.PI * 2,
+            walkRadius: 1.5 + Math.random() * 2,
+            bobPhase: Math.random() * Math.PI * 2,
+            talking: false,
+            facingPlayer: false
+        };
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   WORLD OBJECTS
+   ═══════════════════════════════════════════════════════════ */
+
+// Pillars
+var pillars = [];
+for (var px = -35; px <= 35; px += 14) {
+    pillars.push({ x: px, z: 0, glow: Math.random() });
+    pillars.push({ x: px, z: 50, glow: Math.random() });
+}
+// Side pillars
+for (var pz = 10; pz <= 40; pz += 10) {
+    pillars.push({ x: -30, z: pz, glow: Math.random() });
+    pillars.push({ x: 30, z: pz, glow: Math.random() });
+}
+
+// Floating orbs
+var orbs = [];
+for (var i = 0; i < 12; i++) {
+    orbs.push({
+        x: (Math.random() - 0.5) * 50,
+        y: 6 + Math.random() * 8,
+        z: 10 + Math.random() * 35,
+        radius: 0.6 + Math.random() * 1.2,
+        color: ['#00ffff', '#ff2aff', '#8844ff', '#ffff00'][i % 4],
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.5 + Math.random() * 0.8
+    });
+}
+
+// Energy beams (from dome)
+var beams = [];
+for (var i = 0; i < 8; i++) {
+    beams.push({
+        angle: (i / 8) * Math.PI * 2,
+        color: i % 2 === 0 ? 'rgba(0,255,255,' : 'rgba(255,42,255,',
+        width: 1 + Math.random() * 1.5,
+        phase: Math.random() * Math.PI * 2
+    });
+}
+
+// Particles
 var particles = [];
-
-// State
-var state = 'title'; // title, playing, dead
-var gameOverTimer = 0;
-var frameCount = 0;
-var shakeX = 0, shakeY = 0;
-
-// Grid animation
-var gridOffset = 0;
-
-function initRoad() {
-    road = [];
-    for (var i = 0; i < ROAD_SEGMENTS; i++) {
-        var z = i * SEG_LEN;
-        if (i < 50) curvature = 0;
-        else if (i < 80) targetCurve = 0.002;
-        else if (i < 120) targetCurve = -0.003;
-        else if (i < 160) targetCurve = 0.004;
-        else targetCurve = -0.002;
-        curvature += (targetCurve - curvature) * 0.05;
-        road.push({
-            z: z,
-            curve: curvature,
-            y: 0 // could add hills later
+function spawnParticles(wx, wy, wz, color, count) {
+    for (var i = 0; i < count; i++) {
+        particles.push({
+            x: wx + (Math.random() - 0.5) * 2,
+            y: wy,
+            z: wz + (Math.random() - 0.5) * 2,
+            vx: (Math.random() - 0.5) * 0.02,
+            vy: 0.01 + Math.random() * 0.02,
+            vz: (Math.random() - 0.5) * 0.02,
+            life: 1,
+            color: color,
+            size: 0.1 + Math.random() * 0.15
         });
     }
 }
 
-function resetGame() {
-    camZ = 0;
-    speed = baseSpeed;
-    accel = 0;
-    speedMul = 1;
-    playerLane = 1;
-    playerTargetX = 0;
-    playerX = 0;
-    playerY = 0;
-    playerVelY = 0;
-    isJumping = false;
-    lives = 3;
-    score = 0;
-    combo = 0;
-    comboTimer = 0;
-    invincible = 0;
-    obstacles = [];
-    collectibles = [];
-    particles = [];
-    shakeX = 0; shakeY = 0;
-    initRoad();
-    spawnObjects();
-    updateHUD();
+// Ambient particles (floating dust)
+var dustParticles = [];
+for (var i = 0; i < 50; i++) {
+    dustParticles.push({
+        x: (Math.random() - 0.5) * 60,
+        y: 1 + Math.random() * 14,
+        z: Math.random() * 55,
+        phase: Math.random() * Math.PI * 2
+    });
 }
 
-function spawnObjects() {
-    obstacles = [];
-    collectibles = [];
-    for (var i = 0; i < 300; i++) {
-        var z = 600 + i * (30 + Math.random() * 40);
-        var lane = Math.floor(Math.random() * 3);
-        if (Math.random() < 0.55) {
-            obstacles.push({ z: z, lane: lane, type: Math.random() < 0.5 ? 'block' : 'drone', active: true, hit: false });
-        } else {
-            collectibles.push({ z: z, lane: lane, type: Math.random() < 0.35 ? 'egg' : 'coin', active: true, collected: false });
+/* ═══════════════════════════════════════════════════════════
+   GAME STATE
+   ═══════════════════════════════════════════════════════════ */
+var state = 'title'; // title, playing
+var frameCount = 0;
+var dialogOpen = false;
+var dialogNPC = null;
+var interactTarget = null;
+var titleCv, titleCtx, titleAnimId;
+
+/* ═══════════════════════════════════════════════════════════
+   RENDERING — Raycasting Hub World
+   ═══════════════════════════════════════════════════════════ */
+
+function render() {
+    var t = frameCount * 0.016;
+    ctx.fillStyle = '#050510';
+    ctx.fillRect(0, 0, SW, SH);
+
+    var dirX = Math.cos(camAngle), dirY = Math.sin(camAngle);
+    var planeX = -dirY * 0.66, planeY = dirX * 0.66;
+    var fov = 0.8;
+
+    // ─── CEILING DOME ───
+    var domeY = VANISH_Y - 20;
+    // Dome gradient
+    var domeGrad = ctx.createRadialGradient(SW / 2, domeY, 10, SW / 2, domeY, SH * 0.5);
+    domeGrad.addColorStop(0, 'rgba(80,40,160,.25)');
+    domeGrad.addColorStop(0.3, 'rgba(30,15,80,.2)');
+    domeGrad.addColorStop(0.7, 'rgba(10,5,40,.15)');
+    domeGrad.addColorStop(1, 'rgba(5,2,20,0)');
+    ctx.fillStyle = domeGrad;
+    ctx.fillRect(0, 0, SW, VANISH_Y);
+
+    // Dome rings
+    for (var r = 0; r < 5; r++) {
+        var ringY = domeY - 10 - r * 18;
+        var ringR = 120 - r * 18;
+        ctx.strokeStyle = 'rgba(128,0,255,' + (0.12 - r * 0.02) + ')';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(SW / 2, ringY, ringR, ringR * 0.25, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // Central energy sphere at dome apex
+    var sphereR = 18 + Math.sin(t * 2) * 3;
+    var sphereGrad = ctx.createRadialGradient(SW / 2, domeY - 20, 0, SW / 2, domeY - 20, sphereR * 2);
+    sphereGrad.addColorStop(0, 'rgba(0,255,255,.4)');
+    sphereGrad.addColorStop(0.4, 'rgba(128,0,255,.15)');
+    sphereGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sphereGrad;
+    ctx.beginPath();
+    ctx.arc(SW / 2, domeY - 20, sphereR * 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#00ffff';
+    ctx.shadowColor = '#00ffff';
+    ctx.shadowBlur = 25;
+    ctx.beginPath();
+    ctx.arc(SW / 2, domeY - 20, sphereR * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Energy beams from sphere
+    beams.forEach(function(b) {
+        var a = b.angle + t * 0.3 + b.phase;
+        var endX = SW / 2 + Math.cos(a) * 300;
+        var endY = domeY + 200 + Math.sin(t + b.phase) * 30;
+        ctx.strokeStyle = b.color + (0.15 + Math.sin(t * 2 + b.phase) * 0.05) + ')';
+        ctx.lineWidth = b.width;
+        ctx.shadowColor = b.color.slice(0, -1) + ')';
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.moveTo(SW / 2, domeY - 20);
+        ctx.quadraticCurveTo(SW / 2 + Math.cos(a + 0.5) * 50, domeY + 50, endX, endY);
+        ctx.stroke();
+    });
+    ctx.shadowBlur = 0;
+
+    // ─── FLOOR (raycasting grid) ───
+    var numSeg = 80;
+    var segDepth = 2;
+    for (var i = numSeg - 1; i >= 0; i--) {
+        var z1 = i * segDepth;
+        var z2 = (i + 1) * segDepth;
+        var y1 = SH / 2 + (6 / z1) * SH * 0.4;
+        var y2 = SH / 2 + (6 / z2) * SH * 0.4;
+        if (y1 < VANISH_Y) y1 = VANISH_Y;
+        if (y2 < VANISH_Y) y2 = VANISH_Y;
+        var fade = 1 - i / numSeg;
+
+        // Neon grid floor
+        var isHorz = Math.floor((z1 + camZ * 0.5) * 2) % 2 === 0;
+        ctx.fillStyle = isHorz ? 'rgba(128,0,255,' + (fade * 0.12) + ')' : 'rgba(0,255,255,' + (fade * 0.06) + ')';
+        ctx.fillRect(0, y1, SW, Math.max(1, y2 - y1));
+    }
+
+    // Vertical grid lines (perspective)
+    for (var g = -10; g <= 10; g++) {
+        ctx.strokeStyle = 'rgba(0,255,255,0.06)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(SW / 2, VANISH_Y);
+        ctx.lineTo(SW / 2 + g * 80, SH);
+        ctx.stroke();
+    }
+
+    // ─── STAIRCASE (center) ───
+    renderStaircase(t);
+
+    // ─── PILLARS ───
+    pillars.forEach(function(p) {
+        renderPillar(p.x, p.z, t, p.glow);
+    });
+
+    // ─── FLOATING ORBS ───
+    orbs.forEach(function(o) {
+        renderOrb(o, t);
+    });
+
+    // ─── NPCs ───
+    // Sort by distance (far to near)
+    var sortedNPCs = npcs.map(function(n, i) {
+        var dx = n.x - camX, dz = n.z - camZ;
+        return { npc: n, dist: dx * dx + dz * dz, idx: i };
+    }).sort(function(a, b) { return b.dist - a.dist; });
+
+    interactTarget = null;
+    var interactDist = 5;
+
+    sortedNPCs.forEach(function(item) {
+        var n = item.npc;
+        renderNPC(n, t);
+        // Check if player is looking at this NPC
+        var dx = n.x - camX, dz = n.z - camZ;
+        var dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < interactDist) {
+            var toNPC = Math.atan2(dz, dx);
+            var angleDiff = Math.abs(((toNPC - camAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+            if (angleDiff < 0.6) {
+                interactTarget = n;
+                interactDist = dist;
+            }
+        }
+    });
+
+    // ─── DUST PARTICLES ───
+    dustParticles.forEach(function(d) {
+        d.x += Math.sin(t * 0.3 + d.phase) * 0.003;
+        d.y += Math.sin(t * 0.5 + d.phase * 2) * 0.002;
+        var dx = d.x - camX, dz = d.z - camZ;
+        if (dz < 0.5) return;
+        var scale = 6 / dz;
+        var sx = SW / 2 + (dx * dirX + dz * dirY) * scale * 50;
+        var sy = VANISH_Y + (d.y - 7) * scale * 20;
+        if (sx < 0 || sx > SW || sy < 0 || sy > SH) return;
+        var alpha = Math.max(0, 0.3 - dz * 0.008) * (Math.sin(t + d.phase) * 0.3 + 0.7);
+        ctx.fillStyle = 'rgba(0,255,255,' + alpha + ')';
+        ctx.fillRect(sx, sy, 1.5, 1.5);
+    });
+
+    // ─── PARTICLES ───
+    particles.forEach(function(p) {
+        p.x += p.vx; p.y += p.vy; p.z += p.vz; p.life -= 0.015;
+        var dx = p.x - camX, dz = p.z - camZ;
+        if (dz < 0.5 || p.life <= 0) return;
+        var scale = 6 / dz;
+        var sx = SW / 2 + (dx * dirX + dz * dirY) * scale * 50;
+        var sy = VANISH_Y + (p.y - 7) * scale * 20;
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 4;
+        var sz = p.size * scale * 30;
+        ctx.fillRect(sx - sz / 2, sy - sz / 2, sz, sz);
+    });
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+
+    // ─── POST: Vignette + Scanlines ───
+    var vig = ctx.createRadialGradient(SW / 2, SH / 2, SH * 0.3, SW / 2, SH / 2, SH * 0.8);
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(1, 'rgba(5,5,16,0.55)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, SW, SH);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.03)';
+    for (var y = 0; y < SH; y += 3) ctx.fillRect(0, y, SW, 1);
+}
+
+var VANISH_Y = SH * 0.42;
+
+function renderStaircase(t) {
+    // Central grand staircase — stairs going up to the dome
+    var numSteps = 18;
+    var stairW = 16;
+    var stairBaseZ = 22;
+    var stairX = 0; // centered
+
+    for (var i = 0; i < numSteps; i++) {
+        var stepZ = stairBaseZ + i * 0.8;
+        var stepY = 0.5 + i * 0.7;
+        var dx = stairX - camX, dz = stepZ - camZ;
+        if (dz < 1) continue;
+        var dirX_ = Math.cos(camAngle), dirY_ = Math.sin(camAngle);
+        var relX = dx * dirY_ + dz * dirX_;
+        var relZ = -dx * dirX_ + dz * dirY_;
+        if (relZ < 0.5) continue;
+        var scale = 6 / relZ;
+        var sx = SW / 2 + relX * scale * 50;
+        var sy = VANISH_Y + (stepY - 7) * scale * 20;
+        var sw = stairW * scale * 50;
+        var sh = 3 * scale * 20;
+
+        if (sx + sw / 2 < 0 || sx - sw / 2 > SW) continue;
+
+        var glow = (i === numSteps - 1) ? 0.6 + Math.sin(t * 3) * 0.2 : 0.2;
+        // Step surface
+        ctx.fillStyle = 'rgba(20,10,50,' + (0.5 + i * 0.02) + ')';
+        ctx.fillRect(sx - sw / 2, sy - sh, sw, sh);
+
+        // Neon edge on each step
+        ctx.strokeStyle = 'rgba(0,255,255,' + glow + ')';
+        ctx.lineWidth = Math.max(1, scale * 3);
+        ctx.shadowColor = '#00ffff';
+        ctx.shadowBlur = 4 * glow;
+        ctx.beginPath();
+        ctx.moveTo(sx - sw / 2, sy);
+        ctx.lineTo(sx + sw / 2, sy);
+        ctx.stroke();
+
+        // Side glow
+        ctx.strokeStyle = 'rgba(255,42,255,' + (glow * 0.6) + ')';
+        ctx.beginPath();
+        ctx.moveTo(sx - sw / 2, sy - sh);
+        ctx.lineTo(sx - sw / 2, sy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(sx + sw / 2, sy - sh);
+        ctx.lineTo(sx + sw / 2, sy);
+        ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+
+    // Top platform glow
+    var topZ = stairBaseZ + numSteps * 0.8;
+    var topY = 0.5 + numSteps * 0.7;
+    var dx = stairX - camX, dz = topZ - camZ;
+    if (dz > 1) {
+        var relX = dx * Math.sin(camAngle) + dz * Math.cos(camAngle);
+        var relZ = -dx * Math.cos(camAngle) + dz * Math.sin(camAngle);
+        if (relZ > 0.5) {
+            var scale = 6 / relZ;
+            var sx = SW / 2 + relX * scale * 50;
+            var sy = VANISH_Y + (topY - 7) * scale * 20;
+            var grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, 40 * scale * 50);
+            grad.addColorStop(0, 'rgba(0,255,255,.2)');
+            grad.addColorStop(1, 'rgba(0,255,255,0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(sx, sy, 40 * scale * 50, 0, Math.PI * 2); ctx.fill();
         }
     }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   PROJECTION HELPERS
-   ═══════════════════════════════════════════════════════════ */
-function projectZ(worldZ) {
-    var relZ = worldZ - camZ;
-    if (relZ <= 0) return null;
-    var scale = PERSPECTIVE / relZ;
-    return {
-        x: SW / 2,
-        y: VANISH_Y,
-        scale: scale,
-        depth: relZ
-    };
+function renderPillar(wx, wz, t, glowPhase) {
+    var dx = wx - camX, dz = wz - camZ;
+    if (dz < 1) return;
+    var dirX_ = Math.cos(camAngle), dirY_ = Math.sin(camAngle);
+    var relX = dx * dirY_ + dz * dirX_;
+    var relZ = -dx * dirX_ + dz * dirY_;
+    if (relZ < 0.5) return;
+    var scale = 6 / relZ;
+    var sx = SW / 2 + relX * scale * 50;
+    var pillarH = 12;
+    var pillarW = 2.5;
+    var syBottom = VANISH_Y + (0 - 7) * scale * 20;
+    var syTop = VANISH_Y + (pillarH - 7) * scale * 20;
+    var sw = pillarW * scale * 50;
+
+    if (sx + sw < 0 || sx - sw > SW) return;
+
+    // Pillar body
+    var bodyGrad = ctx.createLinearGradient(sx - sw, syTop, sx + sw, syBottom);
+    bodyGrad.addColorStop(0, 'rgba(30,15,60,.8)');
+    bodyGrad.addColorStop(0.5, 'rgba(50,25,80,.9)');
+    bodyGrad.addColorStop(1, 'rgba(20,10,40,.8)');
+    ctx.fillStyle = bodyGrad;
+    ctx.fillRect(sx - sw, syTop, sw * 2, syBottom - syTop);
+
+    // Neon strips on pillar
+    var glow = 0.3 + Math.sin(t * 1.5 + glowPhase * 10) * 0.15;
+    ctx.strokeStyle = 'rgba(0,255,255,' + glow + ')';
+    ctx.lineWidth = Math.max(1, scale * 2);
+    ctx.shadowColor = '#00ffff';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.moveTo(sx - sw * 0.3, syTop);
+    ctx.lineTo(sx - sw * 0.3, syBottom);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(sx + sw * 0.3, syTop);
+    ctx.lineTo(sx + sw * 0.3, syBottom);
+    ctx.stroke();
+
+    // Pillar cap (top glow)
+    var capGrad = ctx.createRadialGradient(sx, syTop, 0, sx, syTop, sw * 3);
+    capGrad.addColorStop(0, 'rgba(128,0,255,.2)');
+    capGrad.addColorStop(1, 'rgba(128,0,255,0)');
+    ctx.fillStyle = capGrad;
+    ctx.beginPath(); ctx.arc(sx, syTop, sw * 3, 0, Math.PI * 2); ctx.fill();
+
+    // Base glow
+    var baseGrad = ctx.createRadialGradient(sx, syBottom, 0, sx, syBottom, sw * 2.5);
+    baseGrad.addColorStop(0, 'rgba(0,255,255,.12)');
+    baseGrad.addColorStop(1, 'rgba(0,255,255,0)');
+    ctx.fillStyle = baseGrad;
+    ctx.beginPath(); ctx.arc(sx, syBottom, sw * 2.5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.shadowBlur = 0;
 }
 
-function worldToScreen(wx, wy, worldZ) {
-    var relZ = worldZ - camZ;
-    if (relZ <= 1) return null;
-    var scale = PERSPECTIVE / relZ;
-    return {
-        x: SW / 2 + wx * scale,
-        y: VANISH_Y + wy * scale,
-        scale: scale,
-        depth: relZ
-    };
+function renderOrb(o, t) {
+    var bobY = o.y + Math.sin(t * o.speed + o.phase) * 0.8;
+    var dx = o.x - camX, dz = o.z - camZ;
+    if (dz < 1) return;
+    var dirX_ = Math.cos(camAngle), dirY_ = Math.sin(camAngle);
+    var relX = dx * dirY_ + dz * dirX_;
+    var relZ = -dx * dirX_ + dz * dirY_;
+    if (relZ < 0.5) return;
+    var scale = 6 / relZ;
+    var sx = SW / 2 + relX * scale * 50;
+    var sy = VANISH_Y + (bobY - 7) * scale * 20;
+    var sr = o.radius * scale * 50;
+
+    if (sx + sr * 3 < 0 || sx - sr * 3 > SW) return;
+
+    // Outer glow
+    var glowGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 3);
+    glowGrad.addColorStop(0, o.color + '33');
+    glowGrad.addColorStop(0.5, o.color + '11');
+    glowGrad.addColorStop(1, o.color + '00');
+    ctx.fillStyle = glowGrad;
+    ctx.beginPath(); ctx.arc(sx, sy, sr * 3, 0, Math.PI * 2); ctx.fill();
+
+    // Core
+    var pulse = 0.7 + Math.sin(t * 2 + o.phase) * 0.3;
+    ctx.fillStyle = o.color;
+    ctx.shadowColor = o.color;
+    ctx.shadowBlur = 15 * pulse;
+    ctx.globalAlpha = pulse;
+    ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+
+    // Inner bright spot
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = pulse * 0.5;
+    ctx.beginPath(); ctx.arc(sx - sr * 0.2, sy - sr * 0.2, sr * 0.3, 0, Math.PI * 2); ctx.fill();
+
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
 }
 
-function getLaneX(lane, worldZ) {
-    var relZ = worldZ - camZ;
-    if (relZ <= 1) return 0;
-    var laneWidth = 180;
-    var offset = (lane - 1) * laneWidth;
-    // Add road curve offset
-    var segIdx = Math.floor((worldZ / SEG_LEN) % ROAD_SEGMENTS);
-    if (segIdx >= 0 && segIdx < road.length) {
-        offset += road[segIdx].curve * relZ * 120;
+function renderNPC(npc, t) {
+    var dx = npc.x - camX, dz = npc.z - camZ;
+    if (dz < 1) return;
+    var dirX_ = Math.cos(camAngle), dirY_ = Math.sin(camAngle);
+    var relX = dx * dirY_ + dz * dirX_;
+    var relZ = -dx * dirX_ + dz * dirY_;
+    if (relZ < 0.5) return;
+    var scale = 6 / relZ;
+    var sx = SW / 2 + relX * scale * 50;
+    var sy = VANISH_Y + (0 - 7) * scale * 20;
+    var charH = 5 * scale * 50;
+
+    if (sx + charH < 0 || sx - charH > SW) return;
+
+    // Face player
+    npc.angle = Math.atan2(camX - npc.x, camZ - npc.z);
+
+    // Walk animation
+    npc.walkPhase += 0.02;
+    var walkBob = Math.sin(npc.walkPhase * 3) * 0.15;
+    npc.x = npc.baseX + Math.sin(npc.walkPhase) * npc.walkRadius;
+    npc.z = npc.baseZ + Math.cos(npc.walkPhase * 0.7) * npc.walkRadius * 0.5;
+
+    var baseY = sy;
+    var bobOffset = walkBob * scale * 30;
+
+    // Holographic base platform
+    ctx.fillStyle = npc.color + '15';
+    ctx.shadowColor = npc.color;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(sx, baseY + 2, charH * 0.4, charH * 0.08, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // NPC body (holographic figure)
+    var headR = charH * 0.12;
+    var bodyW = charH * 0.18;
+    var bodyH = charH * 0.35;
+    var legH = charH * 0.3;
+
+    // Legs (simple rectangles with walk animation)
+    var legSwing = Math.sin(npc.walkPhase * 3) * charH * 0.05;
+    ctx.fillStyle = npc.color + '60';
+    ctx.fillRect(sx - bodyW * 0.5 - legSwing, baseY - legH + bobOffset, bodyW * 0.35, legH);
+    ctx.fillRect(sx + bodyW * 0.15 + legSwing, baseY - legH + bobOffset, bodyW * 0.35, legH);
+
+    // Body
+    var bodyGrad = ctx.createLinearGradient(sx - bodyW, baseY - legH - bodyH, sx + bodyW, baseY - legH);
+    bodyGrad.addColorStop(0, npc.color + 'aa');
+    bodyGrad.addColorStop(1, npc.color + '55');
+    ctx.fillStyle = bodyGrad;
+    ctx.fillRect(sx - bodyW / 2, baseY - legH - bodyH + bobOffset, bodyW, bodyH);
+
+    // Neon outline
+    ctx.strokeStyle = npc.color;
+    ctx.lineWidth = Math.max(1, scale * 2);
+    ctx.shadowColor = npc.color;
+    ctx.shadowBlur = 6;
+    ctx.strokeRect(sx - bodyW / 2, baseY - legH - bodyH + bobOffset, bodyW, bodyH);
+
+    // Head
+    ctx.fillStyle = npc.color + 'cc';
+    ctx.beginPath();
+    ctx.arc(sx, baseY - legH - bodyH - headR * 1.2 + bobOffset, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Visor / face glow
+    ctx.fillStyle = npc.accentColor;
+    ctx.shadowColor = npc.accentColor;
+    ctx.shadowBlur = 8;
+    ctx.fillRect(sx - headR * 0.7, baseY - legH - bodyH - headR * 1.4 + bobOffset, headR * 1.4, headR * 0.3);
+    ctx.shadowBlur = 0;
+
+    // Name tag above head
+    if (scale > 0.15) {
+        ctx.font = Math.max(8, Math.min(12, charH * 0.08)) + 'px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = npc.color;
+        ctx.shadowColor = npc.color;
+        ctx.shadowBlur = 4;
+        ctx.fillText(npc.name, sx, baseY - legH - bodyH - headR * 2.8 + bobOffset);
+        ctx.shadowBlur = 0;
     }
-    return offset;
-}
 
-/* ═══════════════════════════════════════════════════════════
-   INPUT
-   ═══════════════════════════════════════════════════════════ */
-var keys = {};
-document.addEventListener('keydown', function(e) {
-    keys[e.key] = true;
-    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].includes(e.key)) e.preventDefault();
-});
-document.addEventListener('keyup', function(e) { keys[e.key] = false; });
-
-// Touch
-var touchLeft = false, touchRight = false, touchJump = false;
-document.getElementById('tz-left').addEventListener('touchstart', function(e) { e.preventDefault(); touchLeft = true; });
-document.getElementById('tz-right').addEventListener('touchstart', function(e) { e.preventDefault(); touchRight = true; });
-document.getElementById('tz-mid').addEventListener('touchstart', function(e) { e.preventDefault(); });
-document.getElementById('tz-jump').addEventListener('touchstart', function(e) { e.preventDefault(); touchJump = true; });
-document.addEventListener('touchend', function() { touchLeft = false; touchRight = false; touchJump = false; });
-document.addEventListener('touchcancel', function() { touchLeft = false; touchRight = false; touchJump = false; });
-
-function inputLeft() { return keys['ArrowLeft'] || keys['a'] || keys['A'] || touchLeft; }
-function inputRight() { return keys['ArrowRight'] || keys['d'] || keys['D'] || touchRight; }
-function inputJump() { return keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W'] || touchJump; }
-
-var jumpHeld = false;
-var moveTimer = 0;
-
-function handleInput(dt) {
-    if (state !== 'playing') return;
-
-    moveTimer -= dt;
-
-    // Lateral movement (lane-based, with cooldown)
-    if (moveTimer <= 0) {
-        if (inputLeft() && playerLane > 0) {
-            playerLane--;
-            moveTimer = 0.12;
-            sfx('move');
-        } else if (inputRight() && playerLane < 2) {
-            playerLane++;
-            moveTimer = 0.12;
-            sfx('move');
-        }
-    }
-
-    playerTargetX = getLaneX(playerLane, camZ + 50);
-
-    // Jump
-    if (inputJump() && !jumpHeld && !isJumping) {
-        isJumping = true;
-        playerVelY = -7;
-        jumpHeld = true;
-        sfx('jump');
-    }
-    if (!inputJump()) jumpHeld = false;
+    // Holographic shimmer
+    ctx.globalAlpha = 0.08 + Math.sin(t * 4 + npc.walkPhase) * 0.04;
+    ctx.fillStyle = npc.accentColor;
+    ctx.fillRect(sx - bodyW * 0.6, baseY - legH - bodyH + bobOffset + Math.sin(t * 6) * bodyH, bodyW * 1.2, 2);
+    ctx.globalAlpha = 1;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -446,672 +848,147 @@ function handleInput(dt) {
    ═══════════════════════════════════════════════════════════ */
 function update(dt) {
     if (state !== 'playing') return;
-
     frameCount++;
     var t = frameCount * 0.016;
 
-    // Speed increases over time
-    speedMul = 1 + score * 0.0003;
-    if (speedMul > 2.5) speedMul = 2.5;
-    speed = baseSpeed * speedMul;
+    // Look
+    if (!dialogOpen) {
+        if (keys['ArrowLeft'] || lookDX < -0.1) camAngle -= 1.5 * dt;
+        if (keys['ArrowRight'] || lookDX > 0.1) camAngle += 1.5 * dt;
+        camPitch += lookDY * 0.5;
+        camPitch = Math.max(-0.5, Math.min(0.5, camPitch));
+    }
 
-    camZ += speed * 60 * dt;
+    // Move
+    var fwdX = Math.cos(camAngle), fwdZ = Math.sin(camAngle);
+    var rightX = Math.cos(camAngle + Math.PI / 2), rightZ = Math.sin(camAngle + Math.PI / 2);
+    var mx = 0, mz = 0;
 
-    // Road curve (cycles)
-    var phase = (camZ / (SEG_LEN * ROAD_SEGMENTS)) * Math.PI * 2;
-    curvature = Math.sin(phase * 2) * 0.003 + Math.sin(phase * 3.7) * 0.0015;
+    if (!dialogOpen) {
+        if (keys['w'] || keys['W'] || keys['ArrowUp'] || mcFwd) { mx += fwdX; mz += fwdZ; }
+        if (keys['s'] || keys['S'] || keys['ArrowDown'] || mcBack) { mx -= fwdX; mz -= fwdZ; }
+        if (keys['a'] || keys['A'] || mcLeft) { mx -= rightX; mz -= rightZ; }
+        if (keys['d'] || keys['D'] || mcRight) { mx += rightX; mz += rightZ; }
+    }
 
-    // Player physics
-    playerX += (playerTargetX - playerX) * 8 * dt;
+    var len = Math.sqrt(mx * mx + mz * mz);
+    if (len > 0) {
+        mx = mx / len * moveSpeed * dt;
+        mz = mz / len * moveSpeed * dt;
+        camX += mx; camZ += mz;
 
-    // Jump physics
-    if (isJumping) {
-        playerVelY += 22 * dt; // gravity
-        playerY -= playerVelY;
-        if (playerY >= 0) {
-            playerY = 0;
-            playerVelY = 0;
-            isJumping = false;
+        // Head bob
+        headBob += dt * 12;
+        stepTimer -= dt;
+        if (stepTimer <= 0) { sfx('step'); stepTimer = 0.35; }
+    } else {
+        headBob *= 0.9;
+        stepTimer = 0;
+    }
+
+    // Bounds
+    camX = Math.max(-28, Math.min(28, camX));
+    camZ = Math.max(2, Math.min(48, camZ));
+
+    // Interact
+    var doInteract = (keys['e'] || keys['E']) || mcInteract;
+    if (doInteract) {
+        if (dialogOpen) {
+            dialogOpen = false;
+            dialogNPC = null;
+            document.getElementById('dialog').classList.remove('show');
+            document.getElementById('interact-hint').classList.remove('show');
+            sfx('close');
+        } else if (interactTarget) {
+            dialogOpen = true;
+            dialogNPC = interactTarget;
+            dialogNPC.lineIdx = 0;
+            document.getElementById('dialog-name').textContent = dialogNPC.name;
+            document.getElementById('dialog-text').textContent = dialogNPC.lines[0];
+            document.getElementById('dialog').classList.add('show');
+            sfx('interact');
         }
+        keys['e'] = false; keys['E'] = false;
+        mcInteract = false;
     }
 
-    // Invincibility timer
-    if (invincible > 0) invincible -= dt;
+    // Interact hint
+    var hint = document.getElementById('interact-hint');
+    if (interactTarget && !dialogOpen) { hint.classList.add('show'); hint.textContent = '[ E ] TALK TO ' + interactTarget.name; }
+    else { hint.classList.remove('show'); }
 
-    // Combo timer
-    if (comboTimer > 0) {
-        comboTimer -= dt;
-        if (comboTimer <= 0) combo = 0;
+    // Ambient particles
+    if (frameCount % 10 === 0) {
+        spawnParticles((Math.random() - 0.5) * 40, 12, Math.random() * 45,
+            ['#00ffff', '#ff2aff', '#8844ff'][Math.floor(Math.random() * 3)], 1);
     }
 
-    // Speed increase to road scroll
-    gridOffset += speed * 60 * dt;
-
-    // Check collisions
-    var playerZ = camZ + 60;
-    var playerLaneW = 140;
-
-    // Obstacles
-    for (var i = 0; i < obstacles.length; i++) {
-        var ob = obstacles[i];
-        if (!ob.active || ob.hit) continue;
-        var dz = Math.abs(ob.z - playerZ);
-        if (dz < 40) {
-            var ox = getLaneX(ob.lane, playerZ);
-            var dx = Math.abs(ox - playerX);
-            var hitLateral = dx < playerLaneW * 0.6;
-            var hitVertical = playerY < -30; // not jumped high enough
-
-            if (hitLateral && hitVertical) {
-                ob.hit = true;
-                sfx('hit');
-                lives--;
-                combo = 0;
-                invincible = 1.5;
-                shakeX = (Math.random() - 0.5) * 12;
-                shakeY = (Math.random() - 0.5) * 8;
-                spawnParticles(ob.x || 0, SH * 0.7, '#ff2aff', 20);
-                updateHUD();
-                if (lives <= 0) {
-                    state = 'dead';
-                    gameOverTimer = 0;
-                    sfx('die');
-                    if (score > bestScore) bestScore = score;
-                }
-                break;
-            }
-        }
-    }
-
-    // Collectibles
-    for (var i = 0; i < collectibles.length; i++) {
-        var c = collectibles[i];
-        if (!c.active || c.collected) continue;
-        var dz = Math.abs(c.z - playerZ);
-        if (dz < 45) {
-            var cx = getLaneX(c.lane, playerZ);
-            var dx2 = Math.abs(cx - playerX);
-            if (dx2 < playerLaneW * 0.7) {
-                c.collected = true;
-                if (c.type === 'coin') {
-                    score += 10 + combo * 5;
-                    sfx('coin');
-                } else {
-                    score += 50 + combo * 25;
-                    sfx('egg');
-                }
-                combo++;
-                comboTimer = 3;
-                updateHUD();
-                spawnParticles(0, SH * 0.65, c.type === 'egg' ? '#ff2aff' : '#00ffff', 12);
-            }
-        }
-    }
-
-    // Extend world
-    var maxZ = Math.max(
-        obstacles.length > 0 ? obstacles[obstacles.length - 1].z : 0,
-        collectibles.length > 0 ? collectibles[collectibles.length - 1].z : 0
-    );
-    if (maxZ - camZ < 4000) {
-        for (var i = 0; i < 40; i++) {
-            var z = maxZ + 40 + i * (25 + Math.random() * 35);
-            var lane = Math.floor(Math.random() * 3);
-            if (Math.random() < 0.5) {
-                obstacles.push({ z: z, lane: lane, type: Math.random() < 0.5 ? 'block' : 'drone', active: true, hit: false });
-            } else {
-                collectibles.push({ z: z, lane: lane, type: Math.random() < 0.3 ? 'egg' : 'coin', active: true, collected: false });
-            }
-        }
-    }
-
-    // Clean up far objects
-    while (obstacles.length > 0 && obstacles[0].z < camZ - 100) obstacles.shift();
-    while (collectibles.length > 0 && collectibles[0].z < camZ - 100) collectibles.shift();
-
-    // Particles
+    // Update particles
     for (var i = particles.length - 1; i >= 0; i--) {
         var p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.15;
-        p.life -= dt * 2;
+        p.x += p.vx; p.y += p.vy; p.z += p.vz; p.life -= 0.015;
         if (p.life <= 0) particles.splice(i, 1);
     }
 
-    // Shake decay
-    shakeX *= 0.9;
-    shakeY *= 0.9;
-
-    // Game over transition
-    if (state === 'dead') {
-        gameOverTimer += dt;
-        if (gameOverTimer > 1.0) {
-            document.getElementById('go-score').textContent = score;
-            document.getElementById('go-best').textContent = bestScore;
-            document.getElementById('gameover').style.display = 'flex';
-        }
-    }
-}
-
-function spawnParticles(sx, sy, color, count) {
-    for (var i = 0; i < count; i++) {
-        particles.push({
-            x: sx + (Math.random() - 0.5) * 60,
-            y: sy + (Math.random() - 0.5) * 20,
-            vx: (Math.random() - 0.5) * 6,
-            vy: -Math.random() * 4 - 1,
-            life: 1,
-            color: color,
-            size: 2 + Math.random() * 3
-        });
-    }
+    document.getElementById('npc-count').textContent = npcs.length;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   RENDER
+   TITLE SCREEN
    ═══════════════════════════════════════════════════════════ */
-function render() {
-    var t = frameCount * 0.016;
-
-    // Clear
-    ctx.fillStyle = '#050510';
-    ctx.fillRect(0, 0, SW, SH);
-
-    ctx.save();
-    ctx.translate(shakeX, shakeY);
-
-    // ─── SKY ───
-    var skyGrad = ctx.createLinearGradient(0, 0, 0, VANISH_Y);
-    skyGrad.addColorStop(0, '#050520');
-    skyGrad.addColorStop(0.5, '#0a0a30');
-    skyGrad.addColorStop(0.85, '#201040');
-    skyGrad.addColorStop(1, '#ff2aff');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, SW, VANISH_Y);
-
-    // Stars
-    for (var i = 0; i < 60; i++) {
-        var sx = (Math.sin(i * 127.1) * 43758.5 + 500) % SW;
-        var sy = (Math.sin(i * 311.7) * 43758.5 + 500) % (VANISH_Y - 20);
-        var tw = Math.sin(t * 1.5 + i * 2.3) * 0.4 + 0.6;
-        ctx.globalAlpha = tw * 0.7;
-        ctx.fillStyle = i % 3 === 0 ? '#ff88ff' : '#88ffff';
-        ctx.fillRect(sx, sy, 1.5, 1.5);
-    }
-    ctx.globalAlpha = 1;
-
-    // Sun / moon orb
-    var sunX = SW * 0.5 + Math.sin(t * 0.1) * 40;
-    var sunY = VANISH_Y - 30 + Math.sin(t * 0.15) * 10;
-    var sunR = 35;
-    var sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 2.5);
-    sunGrad.addColorStop(0, 'rgba(255,42,255,.35)');
-    sunGrad.addColorStop(0.4, 'rgba(255,42,255,.1)');
-    sunGrad.addColorStop(1, 'rgba(255,42,255,0)');
-    ctx.fillStyle = sunGrad;
-    ctx.beginPath(); ctx.arc(sunX, sunY, sunR * 2.5, 0, Math.PI * 2); ctx.fill();
-
-    ctx.fillStyle = '#ff2aff';
-    ctx.shadowColor = '#ff2aff';
-    ctx.shadowBlur = 30;
-    ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // Horizontal scan lines through sun
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = '#050510';
-    for (var i = 0; i < 8; i++) {
-        var ly = sunY - sunR + (sunR * 2 * (i + 1)) / 10;
-        var lw = sunR * 0.8 * Math.sin(Math.PI * ((i + 1) / 10));
-        ctx.fillRect(sunX - lw, ly, lw * 2, 2 + i * 0.5);
-    }
-    ctx.globalAlpha = 1;
-
-    // ─── GRID FLOOR ───
-    var horizonY = VANISH_Y;
-
-    // Road + grid - draw from back to front
-    var numSeg = 100;
-    var segDepth = 15;
-    for (var i = numSeg - 1; i >= 0; i--) {
-        var z1 = camZ + i * segDepth;
-        var z2 = camZ + (i + 1) * segDepth;
-        var p1 = projectZ(z1);
-        var p2 = projectZ(z2);
-        if (!p1 || !p2) continue;
-
-        var depth1 = z1 - camZ;
-        var depth2 = z2 - camZ;
-        var fade = 1 - depth1 / (numSeg * segDepth);
-        if (fade < 0) fade = 0;
-
-        // Road curve
-        var segIdx1 = Math.floor((z1 / SEG_LEN) % ROAD_SEGMENTS);
-        var segIdx2 = Math.floor((z2 / SEG_LEN) % ROAD_SEGMENTS);
-        var curve1 = segIdx1 >= 0 && segIdx1 < road.length ? road[segIdx1].curve : 0;
-        var curve2 = segIdx2 >= 0 && segIdx2 < road.length ? road[segIdx2].curve : 0;
-
-        var w1 = ROAD_W * p1.scale;
-        var w2 = ROAD_W * p2.scale;
-        var cx1 = SW / 2 + curve1 * depth1 * 120 * p1.scale;
-        var cx2 = SW / 2 + curve2 * depth2 * 120 * p2.scale;
-
-        var y1 = p1.y;
-        var y2 = p2.y;
-
-        // Road surface
-        var roadAlpha = fade * 0.9;
-        var alternate = (Math.floor((z1 - gridOffset) / segDepth) % 2 === 0);
-
-        // Neon grid lines
-        ctx.strokeStyle = 'rgba(0,255,255,' + (fade * 0.15) + ')';
-        ctx.lineWidth = 1;
-
-        // Horizontal grid lines (depth)
-        ctx.beginPath();
-        ctx.moveTo(cx1 - w1, y1);
-        ctx.lineTo(cx1 + w1, y1);
-        ctx.stroke();
-
-        // Vertical grid lines (lanes)
-        if (i % 3 === 0) {
-            ctx.strokeStyle = 'rgba(128,0,255,' + (fade * 0.12) + ')';
-            ctx.beginPath();
-            ctx.moveTo(cx1 - w1, y1);
-            ctx.lineTo(cx2 - w2, y2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(cx1 + w1, y1);
-            ctx.lineTo(cx2 + w2, y2);
-            ctx.stroke();
-            // Center line
-            ctx.strokeStyle = 'rgba(255,42,255,' + (fade * 0.08) + ')';
-            ctx.beginPath();
-            ctx.moveTo(cx1, y1);
-            ctx.lineTo(cx2, y2);
-            ctx.stroke();
-        }
-
-        // Road fill (dark surface)
-        var rFill = alternate ? 'rgba(12,8,30,' : 'rgba(8,5,22,';
-        ctx.fillStyle = rFill + (fade * 0.8) + ')';
-        ctx.beginPath();
-        ctx.moveTo(cx1 - w1, y1);
-        ctx.lineTo(cx1 + w1, y1);
-        ctx.lineTo(cx2 + w2, y2);
-        ctx.lineTo(cx2 - w2, y2);
-        ctx.closePath();
-        ctx.fill();
-
-        // Edge glow lines
-        if (fade > 0.3) {
-            ctx.strokeStyle = 'rgba(0,255,255,' + (fade * 0.4) + ')';
-            ctx.lineWidth = 1.5;
-            ctx.shadowColor = '#00ffff';
-            ctx.shadowBlur = 4 * fade;
-            ctx.beginPath();
-            ctx.moveTo(cx1 - w1, y1);
-            ctx.lineTo(cx2 - w2, y2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(cx1 + w1, y1);
-            ctx.lineTo(cx2 + w2, y2);
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-        }
-    }
-
-    // ─── OBSTACLES ───
-    for (var i = 0; i < obstacles.length; i++) {
-        var ob = obstacles[i];
-        if (!ob.active || ob.hit) continue;
-        var relZ = ob.z - camZ;
-        if (relZ < 5 || relZ > numSeg * segDepth) continue;
-        var sp = projectZ(ob.z);
-        if (!sp) continue;
-        var ox = getLaneX(ob.lane, ob.z);
-        var sx = SW / 2 + ox * sp.scale;
-        var sy = sp.y;
-        var sz = sp.scale;
-
-        if (ob.type === 'block') {
-            // Glitch block — neon wireframe cube
-            var bSize = 30 * sz;
-            if (bSize < 2) continue;
-            var glow = Math.sin(t * 8 + ob.z) * 0.3 + 0.7;
-
-            ctx.strokeStyle = 'rgba(255,42,255,' + (glow * 0.8) + ')';
-            ctx.lineWidth = Math.max(1, sz * 0.8);
-            ctx.shadowColor = '#ff2aff';
-            ctx.shadowBlur = 8 * glow;
-            ctx.strokeRect(sx - bSize / 2, sy - bSize * 1.2, bSize, bSize);
-
-            // Inner glitch lines
-            ctx.strokeStyle = 'rgba(0,255,255,' + (glow * 0.4) + ')';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(sx - bSize / 2, sy - bSize * 0.7);
-            ctx.lineTo(sx + bSize / 2, sy - bSize * 0.7);
-            ctx.moveTo(sx, sy - bSize * 1.2);
-            ctx.lineTo(sx, sy - bSize * 0.2);
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-
-            // Fill
-            ctx.fillStyle = 'rgba(128,0,255,' + (glow * 0.15) + ')';
-            ctx.fillRect(sx - bSize / 2, sy - bSize * 1.2, bSize, bSize);
-
-        } else {
-            // Drone — triangular shape with eyes
-            var dSize = 22 * sz;
-            if (dSize < 2) continue;
-            var bob = Math.sin(t * 4 + ob.z * 0.1) * 3 * sz;
-
-            ctx.fillStyle = '#ff2aff';
-            ctx.shadowColor = '#ff2aff';
-            ctx.shadowBlur = 12;
-            ctx.beginPath();
-            ctx.moveTo(sx, sy - dSize * 1.5 + bob);
-            ctx.lineTo(sx - dSize, sy - dSize * 0.5 + bob);
-            ctx.lineTo(sx + dSize, sy - dSize * 0.5 + bob);
-            ctx.closePath();
-            ctx.fill();
-
-            // Eye
-            ctx.fillStyle = '#ff0000';
-            ctx.shadowColor = '#ff0000';
-            ctx.shadowBlur = 8;
-            ctx.beginPath();
-            ctx.arc(sx, sy - dSize * 0.8 + bob, dSize * 0.25, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-        }
-    }
-
-    // ─── COLLECTIBLES ───
-    for (var i = 0; i < collectibles.length; i++) {
-        var c = collectibles[i];
-        if (!c.active || c.collected) continue;
-        var relZ = c.z - camZ;
-        if (relZ < 5 || relZ > numSeg * segDepth) continue;
-        var sp2 = projectZ(c.z);
-        if (!sp2) continue;
-        var cx2_ = getLaneX(c.lane, c.z);
-        var sx2 = SW / 2 + cx2_ * sp2.scale;
-        var sy2 = sp2.y;
-        var sz2 = sp2.scale;
-
-        var pulse = Math.sin(t * 5 + c.z) * 0.3 + 0.7;
-
-        if (c.type === 'coin') {
-            // Score coin — glowing circle
-            var r = 10 * sz2;
-            if (r < 1.5) continue;
-            var coinGrad = ctx.createRadialGradient(sx2, sy2 - r * 1.5, 0, sx2, sy2 - r * 1.5, r * 2);
-            coinGrad.addColorStop(0, 'rgba(0,255,255,' + pulse + ')');
-            coinGrad.addColorStop(0.5, 'rgba(0,200,255,' + (pulse * 0.5) + ')');
-            coinGrad.addColorStop(1, 'rgba(0,100,255,0)');
-            ctx.fillStyle = coinGrad;
-            ctx.beginPath();
-            ctx.arc(sx2, sy2 - r * 1.5, r * 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#00ffff';
-            ctx.shadowColor = '#00ffff';
-            ctx.shadowBlur = 10;
-            ctx.beginPath();
-            ctx.arc(sx2, sy2 - r * 1.5, r, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-        } else {
-            // Easter egg — diamond shape
-            var eSize = 12 * sz2;
-            if (eSize < 1.5) continue;
-            var eggGlow = pulse;
-
-            ctx.fillStyle = '#ff2aff';
-            ctx.shadowColor = '#ff2aff';
-            ctx.shadowBlur = 14 * eggGlow;
-            ctx.beginPath();
-            ctx.moveTo(sx2, sy2 - eSize * 3);
-            ctx.lineTo(sx2 - eSize, sy2 - eSize * 1.8);
-            ctx.lineTo(sx2, sy2 - eSize * 0.6);
-            ctx.lineTo(sx2 + eSize, sy2 - eSize * 1.8);
-            ctx.closePath();
-            ctx.fill();
-
-            // Inner glow
-            ctx.fillStyle = 'rgba(255,150,255,' + (eggGlow * 0.6) + ')';
-            ctx.beginPath();
-            ctx.moveTo(sx2, sy2 - eSize * 2.6);
-            ctx.lineTo(sx2 - eSize * 0.5, sy2 - eSize * 1.8);
-            ctx.lineTo(sx2, sy2 - eSize);
-            ctx.lineTo(sx2 + eSize * 0.5, sy2 - eSize * 1.8);
-            ctx.closePath();
-            ctx.fill();
-            ctx.shadowBlur = 0;
-        }
-    }
-
-    // ─── PLAYER ───
-    var playerSx = SW / 2 + playerX * PERSPECTIVE / 60;
-    var playerSy = VANISH_Y + 40 + playerY * 0.3;
-    var pScale = 1.0;
-
-    if (invincible > 0 && Math.sin(t * 20) > 0) {
-        ctx.globalAlpha = 0.4; // blink when hit
-    }
-
-    // Player shadow
-    ctx.fillStyle = 'rgba(128,0,255,0.15)';
-    ctx.beginPath();
-    ctx.ellipse(playerSx, VANISH_Y + 50, 20, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Player body — cyberpunk figure
-    var pH = 40 * pScale; // height
-    var pW = 14 * pScale; // width
-
-    // Legs
-    ctx.fillStyle = '#1a1030';
-    ctx.fillRect(playerSx - pW * 0.6, playerSy - pH * 0.3, pW * 0.4, pH * 0.35);
-    ctx.fillRect(playerSx + pW * 0.2, playerSy - pH * 0.3, pW * 0.4, pH * 0.35);
-
-    // Body
-    ctx.fillStyle = '#2a1050';
-    ctx.fillRect(playerSx - pW * 0.5, playerSy - pH * 0.8, pW, pH * 0.55);
-
-    // Neon trim on body
-    ctx.strokeStyle = '#00ffff';
-    ctx.shadowColor = '#00ffff';
-    ctx.shadowBlur = 6;
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(playerSx - pW * 0.5, playerSy - pH * 0.8, pW, pH * 0.55);
-    ctx.shadowBlur = 0;
-
-    // Head
-    ctx.fillStyle = '#2a1850';
-    ctx.fillRect(playerSx - pW * 0.35, playerSy - pH * 1.15, pW * 0.7, pH * 0.4);
-
-    // Visor
-    ctx.fillStyle = '#00ffff';
-    ctx.shadowColor = '#00ffff';
-    ctx.shadowBlur = 8;
-    ctx.fillRect(playerSx - pW * 0.3, playerSy - pH * 1.05, pW * 0.6, pH * 0.08);
-    ctx.shadowBlur = 0;
-
-    // Shoulders
-    ctx.fillStyle = '#ff2aff';
-    ctx.shadowColor = '#ff2aff';
-    ctx.shadowBlur = 4;
-    ctx.fillRect(playerSx - pW * 0.7, playerSy - pH * 0.75, pW * 0.25, pH * 0.08);
-    ctx.fillRect(playerSx + pW * 0.45, playerSy - pH * 0.75, pW * 0.25, pH * 0.08);
-    ctx.shadowBlur = 0;
-
-    // Arms (neon wireframe)
-    ctx.strokeStyle = '#ff2aff';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(playerSx - pW * 0.6, playerSy - pH * 0.7);
-    ctx.lineTo(playerSx - pW * 0.8, playerSy - pH * 0.3);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(playerSx + pW * 0.6, playerSy - pH * 0.7);
-    ctx.lineTo(playerSx + pW * 0.8, playerSy - pH * 0.3);
-    ctx.stroke();
-
-    ctx.globalAlpha = 1;
-
-    // ─── PARTICLES ───
-    for (var i = 0; i < particles.length; i++) {
-        var p = particles[i];
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 6;
-        ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
-    }
-    ctx.globalAlpha = 1;
-    ctx.shadowBlur = 0;
-
-    // ─── COMBO DISPLAY ───
-    if (combo > 1) {
-        ctx.globalAlpha = Math.min(1, comboTimer);
-        ctx.fillStyle = '#ff2aff';
-        ctx.shadowColor = '#ff2aff';
-        ctx.shadowBlur = 15;
-        ctx.font = 'bold 24px Courier New';
-        ctx.textAlign = 'center';
-        ctx.fillText('COMBO x' + combo, SW / 2, SH * 0.25);
-        ctx.font = '14px Courier New';
-        ctx.fillStyle = '#00ffff';
-        ctx.fillText('+' + (combo * 5) + ' BONUS', SW / 2, SH * 0.25 + 24);
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1;
-    }
-
-    ctx.restore();
-
-    // ─── POST-PROCESSING (vignette + scanlines) ───
-    // Vignette
-    var vigGrad = ctx.createRadialGradient(SW / 2, SH / 2, SH * 0.3, SW / 2, SH / 2, SH * 0.85);
-    vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
-    vigGrad.addColorStop(1, 'rgba(5,5,16,0.6)');
-    ctx.fillStyle = vigGrad;
-    ctx.fillRect(0, 0, SW, SH);
-
-    // Subtle scanlines
-    ctx.fillStyle = 'rgba(0,0,0,0.04)';
-    for (var y = 0; y < SH; y += 3) {
-        ctx.fillRect(0, y, SW, 1);
-    }
-}
-
-/* ═══════════════════════════════════════════════════════════
-   HUD UPDATE
-   ═══════════════════════════════════════════════════════════ */
-function updateHUD() {
-    document.getElementById('score-val').textContent = score;
-    document.getElementById('speed-val').textContent = speedMul.toFixed(1) + 'x';
-    var sector = Math.floor(score / 200) + 1;
-    document.getElementById('level-val').textContent = 'SECTOR ' + sector;
-
-    // Lives dots
-    var html = '';
-    for (var i = 0; i < 3; i++) {
-        html += '<div class="lb-dot' + (i >= lives ? ' dead' : '') + '"></div>';
-    }
-    document.getElementById('lives-bar').innerHTML = html;
-
-    var livesHtml = '';
-    for (var i = 0; i < 3; i++) {
-        livesHtml += '<div class="life' + (i >= lives ? ' dead' : '') + '"></div>';
-    }
-    document.getElementById('lives-display').innerHTML = livesHtml;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   TITLE SCREEN ANIMATION
-   ═══════════════════════════════════════════════════════════ */
-var titleCv, titleCtx, titleAnimId;
 function drawTitle(t) {
     if (!titleCv) return;
     var w = titleCv.width, h = titleCv.height;
     titleCtx.fillStyle = '#050510';
     titleCtx.fillRect(0, 0, w, h);
 
-    // Mini grid
-    var rows = 20;
-    for (var i = 0; i < rows; i++) {
-        var y = h * 0.4 + (h * 0.6) * (i / rows);
-        var perspective = (i / rows);
-        var lineY = y;
-        var alpha = perspective * 0.3;
+    // Mini grid floor
+    for (var i = 0; i < 20; i++) {
+        var y = h * 0.4 + (h * 0.6) * (i / 20);
+        var alpha = (i / 20) * 0.25;
         titleCtx.strokeStyle = 'rgba(0,255,255,' + alpha + ')';
         titleCtx.lineWidth = 1;
-        titleCtx.beginPath();
-        titleCtx.moveTo(0, lineY);
-        titleCtx.lineTo(w, lineY);
-        titleCtx.stroke();
-
-        // Vertical lines with perspective
-        for (var j = -5; j <= 5; j++) {
-            var cx = w / 2;
-            var xOff = j * (30 + perspective * 60);
-            xOff += Math.sin(t * 0.001) * 5 * perspective;
-            var x1 = cx + xOff * 0.1;
-            var x2 = cx + xOff;
-            titleCtx.strokeStyle = 'rgba(128,0,255,' + (alpha * 0.6) + ')';
-            titleCtx.beginPath();
-            titleCtx.moveTo(x1, h * 0.4);
-            titleCtx.lineTo(x2, lineY);
-            titleCtx.stroke();
+        titleCtx.beginPath(); titleCtx.moveTo(0, y); titleCtx.lineTo(w, y); titleCtx.stroke();
+        for (var j = -4; j <= 4; j++) {
+            var x1 = w / 2 + j * 10;
+            var x2 = w / 2 + j * (20 + i * 15);
+            titleCtx.strokeStyle = 'rgba(128,0,255,' + (alpha * 0.5) + ')';
+            titleCtx.beginPath(); titleCtx.moveTo(x1, h * 0.4); titleCtx.lineTo(x2, y); titleCtx.stroke();
         }
     }
 
-    // Sun
-    var sunGrad = titleCtx.createRadialGradient(w / 2, h * 0.35, 0, w / 2, h * 0.35, 40);
-    sunGrad.addColorStop(0, 'rgba(255,42,255,.4)');
-    sunGrad.addColorStop(1, 'rgba(255,42,255,0)');
-    titleCtx.fillStyle = sunGrad;
-    titleCtx.beginPath(); titleCtx.arc(w / 2, h * 0.35, 40, 0, Math.PI * 2); titleCtx.fill();
-    titleCtx.fillStyle = '#ff2aff';
-    titleCtx.beginPath(); titleCtx.arc(w / 2, h * 0.35, 15, 0, Math.PI * 2); titleCtx.fill();
+    // Dome
+    var domeGrad = titleCtx.createRadialGradient(w / 2, h * 0.25, 0, w / 2, h * 0.25, 80);
+    domeGrad.addColorStop(0, 'rgba(0,255,255,.3)');
+    domeGrad.addColorStop(0.5, 'rgba(128,0,255,.1)');
+    domeGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    titleCtx.fillStyle = domeGrad;
+    titleCtx.beginPath(); titleCtx.arc(w / 2, h * 0.25, 80, 0, Math.PI * 2); titleCtx.fill();
+
+    titleCtx.fillStyle = '#00ffff';
+    titleCtx.shadowColor = '#00ffff'; titleCtx.shadowBlur = 15;
+    titleCtx.beginPath(); titleCtx.arc(w / 2, h * 0.25, 8, 0, Math.PI * 2); titleCtx.fill();
+    titleCtx.shadowBlur = 0;
 }
-function animateTitle(t) {
-    drawTitle(t);
-    titleAnimId = requestAnimationFrame(animateTitle);
-}
+function animateTitle(t) { drawTitle(t); titleAnimId = requestAnimationFrame(animateTitle); }
 
 /* ═══════════════════════════════════════════════════════════
-   MAIN LOOP
+   MAIN LOOP + INIT
    ═══════════════════════════════════════════════════════════ */
 function resize() {
     var dpr = window.devicePixelRatio || 1;
-    cv.width = SW * dpr;
-    cv.height = SH * dpr;
-    cv.style.width = '100%';
-    cv.style.height = '100%';
+    cv.width = SW * dpr; cv.height = SH * dpr;
+    cv.style.width = '100%'; cv.style.height = '100%';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
-function startGame() {
-    state = 'playing';
-    resetGame();
-}
-
-function gameLoop(timestamp) {
-    var dt = 1 / 60; // fixed timestep
-    handleInput(dt);
+function gameLoop() {
+    var dt = 1 / 60;
     update(dt);
     render();
     requestAnimationFrame(gameLoop);
 }
 
-// ═══════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════
 function boot() {
     cv = document.getElementById('c');
     ctx = cv.getContext('2d');
@@ -1120,34 +997,21 @@ function boot() {
 
     titleCv = document.getElementById('title-bg');
     titleCtx = titleCv.getContext('2d');
-
-    // Hide loading, show title
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('title').style.display = 'flex';
     animateTitle(0);
 
-    // Title click → start
     document.getElementById('title').onclick = function() {
         cancelAnimationFrame(titleAnimId);
         document.getElementById('title').style.display = 'none';
         initAudio();
-        startGame();
+        initNPCs();
+        state = 'playing';
+        camX = 0; camZ = 45; camAngle = -Math.PI / 2;
         requestAnimationFrame(gameLoop);
     };
-
-    // Game over click → restart
-    document.getElementById('gameover').onclick = function() {
-        document.getElementById('gameover').style.display = 'none';
-        startGame();
-    };
 }
 
-// Start when DOM ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-} else {
-    boot();
-}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
 </script>
 </body>
 </html>
