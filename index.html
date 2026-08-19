@@ -103,7 +103,7 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-
 
 <!-- Game -->
 <div id="wrap">
-  <canvas id="c" width="640" height="400"></canvas>
+  <canvas id="c" width="800" height="450"></canvas>
   <div id="warn"></div>
   <div id="hud">
     <div style="font-size:14px;font-weight:bold;letter-spacing:3px">🏜️ OASIS</div>
@@ -264,7 +264,7 @@ var Module={
     Module._init();
 
     var cv=document.getElementById('c'),ctx=cv.getContext('2d');
-    var img=ctx.createImageData(640,400);
+    var img=ctx.createImageData(800,450);
     var running=false,lastT=0,wasDead=false;
 
     document.getElementById('title').onclick=function(){
@@ -307,7 +307,7 @@ var Module={
 
       // Blit
       var fbPtr=Module._get_framebuffer();
-      var src=new Uint8Array(Module.HEAPU8.buffer,fbPtr,640*400*4);
+      var src=new Uint8Array(Module.HEAPU8.buffer,fbPtr,800*450*4);
       img.data.set(src);
       ctx.putImageData(img,0,0);
 

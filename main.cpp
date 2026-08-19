@@ -14,7 +14,7 @@
 #include <cstdlib>
 
 // ── Screen & Texture ──────────────────────────────────────────
-static const int SW = 640, SH = 400;
+static const int SW = 800, SH = 450;
 static const int TEX = 64;
 static const int MAP = 80;
 
@@ -652,7 +652,7 @@ static void renderFrame() {
     }
 
     // ── Minimap ──
-    int mmS = 100, mmT = 12;
+    int mmS = 130, mmT = 16;
     int mmX0 = SW - mmS - 8, mmY0 = 8;
     double mmSc = (double)mmS / mmT;
     for (int y = 0; y < mmS; y++)
