@@ -6,31 +6,42 @@
 <title>OASIS — Desert Survival</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#0a0804;
+html,body{width:100%;height:100%;overflow:hidden;background:#050010;
   font-family:'Courier New',Courier,monospace;touch-action:none;user-select:none}
 
 #wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
-canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-height:100%}
+#wrap canvas{image-rendering:auto;max-width:100%;max-height:100%;position:absolute}
+#c{z-index:1}
+#cFX{z-index:2;pointer-events:none}
 
 /* HUD */
-#hud{position:absolute;top:6px;left:6px;color:#ffe4b5;font-size:12px;
-  text-shadow:1px 1px 3px rgba(0,0,0,.9);pointer-events:none;z-index:10;line-height:1.5}
-.bar-bg{width:120px;height:8px;background:#1a1408;border:1px solid rgba(255,228,181,.15);
-  border-radius:4px;overflow:hidden;margin:2px 0}
-.bar-fill{height:100%;border-radius:4px;transition:width .25s,background .25s}
+#hud{position:absolute;top:8px;left:8px;color:#ffe4b5;font-size:12px;
+  text-shadow:1px 1px 4px rgba(0,0,0,.95),0 0 8px rgba(255,228,181,.15);pointer-events:none;z-index:10;line-height:1.5}
+.bar-bg{width:128px;height:10px;background:rgba(15,10,5,.85);border:1px solid rgba(255,228,181,.18);
+  border-radius:5px;overflow:hidden;margin:3px 0;position:relative}
+.bar-fill{height:100%;border-radius:5px;transition:width .25s,background .25s;
+  box-shadow:0 0 8px rgba(68,170,255,.4),inset 0 1px 0 rgba(255,255,255,.15)}
+.bar-fill.danger{box-shadow:0 0 8px rgba(208,48,48,.5),inset 0 1px 0 rgba(255,255,255,.1)}
+.bar-fill.warning{box-shadow:0 0 8px rgba(208,160,48,.5),inset 0 1px 0 rgba(255,255,255,.1)}
 #hud .dim{opacity:.55;font-size:10px}
+#hud .label{font-size:11px;letter-spacing:2px;font-weight:bold;opacity:.9}
+#hud .stats{margin-top:4px;font-size:11px;opacity:.8}
 
 /* Sprint indicator */
 #sprint-indicator{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);
-  color:rgba(255,228,181,.6);font-size:11px;pointer-events:none;z-index:10;
-  text-shadow:1px 1px 2px rgba(0,0,0,.8);opacity:0;transition:opacity .2s}
+  color:rgba(255,228,181,.7);font-size:11px;pointer-events:none;z-index:10;
+  text-shadow:0 0 6px rgba(255,200,100,.3);opacity:0;transition:opacity .2s;letter-spacing:2px}
 #sprint-indicator.show{opacity:1}
 
 /* Touch controls */
 .touch{position:absolute;z-index:20;border-radius:50%;
-  background:rgba(255,228,181,.08);border:2px solid rgba(255,228,181,.18)}
+  background:rgba(255,228,181,.06);border:2px solid rgba(255,228,181,.15);
+  backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);transition:background .15s}
+.touch:active{background:rgba(255,228,181,.12)}
 #joy{width:110px;height:110px;bottom:20px;left:20px}
-#knob{width:32px;height:32px;border-radius:50%;background:rgba(255,228,181,.28);
+#knob{width:32px;height:32px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,228,181,.35),rgba(255,228,181,.15));
+  box-shadow:0 0 6px rgba(255,228,181,.15);
   position:absolute;top:39px;left:39px;pointer-events:none}
 .arrow{width:50px;height:50px;bottom:26px;display:flex;align-items:center;
   justify-content:center;font-size:18px;color:rgba(255,228,181,.4)}
@@ -40,17 +51,20 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-
 
 /* Title */
 #title{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;background:rgba(10,8,4,.97);cursor:pointer}
+  align-items:center;justify-content:center;background:rgba(5,0,16,.97);cursor:pointer}
 #title-bg{position:absolute;inset:0;overflow:hidden}
-#title-bg canvas{width:100%;height:100%;opacity:.3}
+#title-bg canvas{width:100%;height:100%;opacity:.35}
 #title-content{position:relative;z-index:2;text-align:center;padding:0 20px}
-#title h1{font-size:clamp(36px,9vw,64px);letter-spacing:12px;
-  text-shadow:0 0 40px rgba(255,170,60,.5),0 0 80px rgba(255,120,30,.2);
-  color:#ffe4b5}
-#title .sub{font-size:clamp(11px,2.8vw,15px);margin:8px 0 30px;opacity:.55;letter-spacing:4px}
-#title .inst{font-size:clamp(10px,2.2vw,12px);line-height:2;opacity:.45;max-width:360px;margin:0 auto}
-#title .start{margin-top:30px;font-size:clamp(14px,3.5vw,20px);letter-spacing:3px;
-  animation:pulse 2.2s ease-in-out infinite}
+#title h1{font-size:clamp(36px,9vw,72px);letter-spacing:14px;
+  text-shadow:0 0 30px rgba(0,229,255,.5),0 0 60px rgba(0,229,255,.3),0 0 100px rgba(138,43,226,.2);
+  color:#00e5ff;animation:titleGlow 4s ease-in-out infinite}
+@keyframes titleGlow{0%,100%{text-shadow:0 0 30px rgba(0,229,255,.5),0 0 60px rgba(0,229,255,.3),0 0 100px rgba(138,43,226,.2)}
+  50%{text-shadow:0 0 40px rgba(0,229,255,.7),0 0 80px rgba(0,229,255,.4),0 0 120px rgba(138,43,226,.3)}}
+#title .sub{font-size:clamp(11px,2.8vw,15px);margin:8px 0 30px;opacity:.6;letter-spacing:6px;color:#8a2be2}
+#title .inst{font-size:clamp(10px,2.2vw,12px);line-height:2;opacity:.45;max-width:380px;margin:0 auto;
+  border-top:1px solid rgba(138,43,226,.2);border-bottom:1px solid rgba(138,43,226,.2);padding:12px 0}
+#title .start{margin-top:30px;font-size:clamp(14px,3.5vw,20px);letter-spacing:4px;
+  animation:pulse 2.2s ease-in-out infinite;color:#00e5ff}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.97)}}
 
 /* Warning flash */
@@ -60,32 +74,53 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-
 /* Game Over */
 #gameover{position:absolute;inset:0;z-index:35;display:none;flex-direction:column;
   align-items:center;justify-content:center;background:rgba(10,4,2,.95);cursor:pointer}
-#gameover h2{font-size:clamp(28px,7vw,48px);color:#e04040;letter-spacing:6px;margin-bottom:12px}
+#gameover h2{font-size:clamp(28px,7vw,52px);color:#e04040;letter-spacing:8px;margin-bottom:12px;
+  text-shadow:0 0 20px rgba(224,64,64,.4)}
 #gameover .go-score{font-size:clamp(14px,3.5vw,20px);color:#ffe4b5;margin-bottom:24px;opacity:.7}
-#gameover .restart{font-size:clamp(13px,3vw,18px);color:#ffe4b5;animation:pulse 2s ease-in-out infinite;letter-spacing:2px}
+#gameover .restart{font-size:clamp(13px,3vw,18px);color:#ffe4b5;animation:pulse 2s ease-in-out infinite;letter-spacing:3px}
 
 /* Loading */
 #loading{position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;background:#0a0804;color:#d4a574}
-.spin{width:28px;height:28px;border:3px solid #d4a574;border-top-color:transparent;
-  border-radius:50%;animation:sp 1s linear infinite;margin-bottom:10px}
+  align-items:center;justify-content:center;background:#050010;color:#00e5ff}
+#loading .title-text{font-size:20px;letter-spacing:8px;margin-bottom:20px;
+  text-shadow:0 0 20px rgba(0,229,255,.4)}
+.spin{width:32px;height:32px;border:3px solid rgba(212,165,116,.3);border-top-color:#00e5ff;
+  border-radius:50%;animation:sp .8s linear infinite;margin-bottom:14px;
+  box-shadow:0 0 10px rgba(0,229,255,.2)}
 @keyframes sp{to{transform:rotate(360deg)}}
+#loading .status{font-size:11px;opacity:.5;letter-spacing:2px}
 
 /* Rotate device overlay */
 #rotate{position:fixed;inset:0;z-index:100;background:#0a0804;display:none;
   flex-direction:column;align-items:center;justify-content:center;color:#ffe4b5;
   text-align:center;padding:20px}
 #rotate .icon{font-size:64px;margin-bottom:16px;animation:spin-phone 2s ease-in-out infinite}
-#rotate .msg{font-size:16px;letter-spacing:2px;opacity:.8}
+#rotate .msg{font-size:16px;letter-spacing:3px;opacity:.8}
 #rotate .sub{font-size:11px;opacity:.4;margin-top:8px}
 @keyframes spin-phone{0%{transform:rotate(0deg)}50%{transform:rotate(90deg)}100%{transform:rotate(0deg)}}
 @media (orientation:portrait){#rotate{display:flex}}
 @media (orientation:landscape){#rotate{display:none}}
+
+/* Sandstorm overlay CSS */
+#sandstorm-overlay{position:absolute;inset:0;z-index:12;pointer-events:none;
+  opacity:0;transition:opacity 1s;background:repeating-linear-gradient(
+  -30deg,transparent,transparent 4px,rgba(180,150,100,.03) 4px,rgba(180,150,100,.03) 8px);
+  mix-blend-mode:screen}
+#sandstorm-overlay.active{opacity:1}
+
+/* Scanline effect */
+#scanlines{position:absolute;inset:0;z-index:11;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);
+  opacity:.3}
 </style>
 </head>
 <body>
 
-<div id="loading"><div class="spin"></div><div>Entering the desert…</div></div>
+<div id="loading">
+  <div class="title-text">🏜️ OASIS</div>
+  <div class="spin"></div>
+  <div class="status">Entering the desert…</div>
+</div>
 
 <!-- Rotate device overlay -->
 <div id="rotate">
@@ -123,15 +158,19 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-
 <!-- Game -->
 <div id="wrap">
   <canvas id="c" width="800" height="450"></canvas>
+  <canvas id="cFX" width="800" height="450"></canvas>
   <div id="warn"></div>
+  <div id="scanlines"></div>
+  <div id="sandstorm-overlay"></div>
   <div id="hud">
-    <div style="font-size:14px;font-weight:bold;letter-spacing:3px">🏜️ OASIS</div>
+    <div class="label">🏜️ OASIS</div>
     <div class="dim">💧 Water</div>
-    <div class="bar-bg"><div class="bar-fill" id="tf" style="width:100%;background:#44aaff"></div></div>
+    <div class="bar-bg"><div class="bar-fill" id="tf" style="width:100%;background:linear-gradient(90deg,#2288ee,#44aaff)"></div></div>
     <div style="font-size:10px" id="tv">100%</div>
-    <div style="margin-top:3px">⭐ <span id="sv">0</span> <span class="dim">oases</span></div>
+    <div class="stats">⭐ <span id="sv">0</span> <span class="dim">oases</span></div>
     <div id="combo" style="margin-top:2px;font-size:10px;color:#ffb347;display:none">🔥 x<span id="combo-v">0</span></div>
-    <div id="sandstorm-warn" style="margin-top:2px;font-size:9px;color:#e8a040;display:none">🌪️ SANDSTORM</div>
+    <div id="sandstorm-warn" style="margin-top:3px;font-size:10px;color:#e8a040;display:none;
+      animation:sandstormBlink .5s ease-in-out infinite">🌪️ SANDSTORM</div>
     <div id="compass" class="dim" style="margin-top:2px;font-size:10px"></div>
   </div>
   <div id="sprint-indicator">🏃 SPRINTING</div>
@@ -139,84 +178,388 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;max-width:100%;max-
   <div class="touch arrow" id="al">◀</div>
   <div class="touch arrow" id="ar">▶</div>
   <div class="touch sprint-btn" id="sprint-touch">🏃</div>
-  <div class="touch" id="cam-toggle" style="width:44px;height:44px;bottom:90px;right:110px;font-size:10px;display:flex;align-items:center;justify-content:center;color:rgba(255,228,181,.5)">📷</div>
+  <div class="touch" id="cam-toggle" style="width:44px;height:44px;bottom:90px;right:110px;font-size:10px;
+    display:flex;align-items:center;justify-content:center;color:rgba(255,228,181,.5)">📷</div>
 </div>
+
+<style>@keyframes sandstormBlink{0%,100%{opacity:1}50%{opacity:.4}}</style>
 
 <!-- ═══════════════════════════════════════════════════════════ -->
 <script>
-/* ─── SOUND ENGINE (Web Audio API) ─── */
+/* ═══════════════════════════════════════════════════════════
+   AMBIENT AUDIO ENGINE
+   ═══════════════════════════════════════════════════════════ */
 var audioCtx = null;
-function initAudio() { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+var ambientNodes = null;
+
+function initAudio() {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    startAmbientWind();
+}
+
+function startAmbientWind() {
+    if (!audioCtx) return;
+    try {
+        // Brown noise for desert wind
+        var bufLen = audioCtx.sampleRate * 4;
+        var buf = audioCtx.createBuffer(2, bufLen, audioCtx.sampleRate);
+        for (var ch = 0; ch < 2; ch++) {
+            var data = buf.getChannelData(ch);
+            var last = 0;
+            for (var i = 0; i < bufLen; i++) {
+                var white = Math.random() * 2 - 1;
+                data[i] = (last + (0.02 * white)) / 1.02;
+                last = data[i];
+                data[i] *= 3.5;
+            }
+        }
+        var src = audioCtx.createBufferSource();
+        src.buffer = buf;
+        src.loop = true;
+        var lpf = audioCtx.createBiquadFilter();
+        lpf.type = 'lowpass';
+        lpf.frequency.value = 200;
+        lpf.Q.value = 0.5;
+        var gain = audioCtx.createGain();
+        gain.gain.value = 0.12;
+        src.connect(lpf);
+        lpf.connect(gain);
+        gain.connect(audioCtx.destination);
+        src.start();
+        ambientNodes = { src: src, gain: gain, lpf: lpf };
+
+        // Modulate wind
+        function modWind() {
+            if (!ambientNodes) return;
+            var t = audioCtx.currentTime;
+            ambientNodes.lpf.frequency.setTargetAtTime(150 + Math.random() * 150, t, 2);
+            ambientNodes.gain.gain.setTargetAtTime(0.08 + Math.random() * 0.1, t, 1.5);
+            setTimeout(modWind, 3000 + Math.random() * 4000);
+        }
+        modWind();
+    } catch(e) {}
+}
 
 function playSound(type) {
     if (!audioCtx) return;
     try {
-        var osc = audioCtx.createOscillator();
-        var gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
         var t = audioCtx.currentTime;
         switch(type) {
-            case 1: // Footstep
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(80 + Math.random() * 40, t);
-                gain.gain.setValueAtTime(0.08, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
-                osc.start(t); osc.stop(t + 0.08);
+            case 1: { // Footstep — layered thud
+                var o1 = audioCtx.createOscillator();
+                var g1 = audioCtx.createGain();
+                o1.type = 'triangle'; o1.frequency.value = 60 + Math.random() * 30;
+                g1.gain.setValueAtTime(0.1, t);
+                g1.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+                o1.connect(g1); g1.connect(audioCtx.destination);
+                o1.start(t); o1.stop(t + 0.1);
+                // Click layer
+                var o2 = audioCtx.createOscillator();
+                var g2 = audioCtx.createGain();
+                o2.type = 'square'; o2.frequency.value = 2000 + Math.random() * 1000;
+                g2.gain.setValueAtTime(0.025, t);
+                g2.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+                o2.connect(g2); g2.connect(audioCtx.destination);
+                o2.start(t); o2.stop(t + 0.03);
                 break;
-            case 2: // Drink — ascending sparkle
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(400, t);
-                osc.frequency.exponentialRampToValueAtTime(1200, t + 0.3);
-                gain.gain.setValueAtTime(0.12, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-                osc.start(t); osc.stop(t + 0.4);
+            }
+            case 2: { // Drink — ascending sparkle
+                for (var n = 0; n < 3; n++) {
+                    var o = audioCtx.createOscillator();
+                    var g = audioCtx.createGain();
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(400 + n * 200, t + n * 0.08);
+                    o.frequency.exponentialRampToValueAtTime(1400 + n * 100, t + 0.3 + n * 0.08);
+                    g.gain.setValueAtTime(0.08, t + n * 0.08);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.4 + n * 0.08);
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.start(t + n * 0.08); o.stop(t + 0.45 + n * 0.08);
+                }
                 break;
-            case 3: // Death — descending tone
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(400, t);
-                osc.frequency.exponentialRampToValueAtTime(60, t + 0.8);
-                gain.gain.setValueAtTime(0.1, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
-                osc.start(t); osc.stop(t + 0.8);
+            }
+            case 3: { // Death — descending drone + crash
+                var o = audioCtx.createOscillator();
+                var g = audioCtx.createGain();
+                o.type = 'sawtooth';
+                o.frequency.setValueAtTime(300, t);
+                o.frequency.exponentialRampToValueAtTime(40, t + 1.2);
+                g.gain.setValueAtTime(0.12, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + 1.2);
+                // Noise burst
+                var buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate);
+                var d = buf.getChannelData(0);
+                for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+                var ns = audioCtx.createBufferSource();
+                ns.buffer = buf;
+                var ng = audioCtx.createGain();
+                ng.gain.setValueAtTime(0.15, t);
+                ng.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+                ns.connect(ng); ng.connect(audioCtx.destination);
+                ns.start(t); ns.stop(t + 0.3);
                 break;
-            case 4: // Warning beep
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(880, t);
-                gain.gain.setValueAtTime(0.06, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-                osc.start(t); osc.stop(t + 0.12);
+            }
+            case 4: { // Warning beep
+                var o = audioCtx.createOscillator();
+                var g = audioCtx.createGain();
+                o.type = 'square'; o.frequency.value = 880;
+                g.gain.setValueAtTime(0.06, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + 0.12);
                 break;
-            case 5: // Door creak
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(120, t);
-                osc.frequency.linearRampToValueAtTime(80, t + 0.15);
-                osc.frequency.linearRampToValueAtTime(150, t + 0.25);
-                gain.gain.setValueAtTime(0.06, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-                osc.start(t); osc.stop(t + 0.3);
+            }
+            case 5: { // Door creak — two oscillators
+                var o1 = audioCtx.createOscillator();
+                var o2 = audioCtx.createOscillator();
+                var g = audioCtx.createGain();
+                o1.type = 'sawtooth'; o2.type = 'triangle';
+                o1.frequency.setValueAtTime(120, t);
+                o1.frequency.linearRampToValueAtTime(80, t + 0.15);
+                o1.frequency.linearRampToValueAtTime(160, t + 0.25);
+                o2.frequency.setValueAtTime(240, t);
+                o2.frequency.linearRampToValueAtTime(160, t + 0.25);
+                g.gain.setValueAtTime(0.05, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+                o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
+                o1.start(t); o2.start(t);
+                o1.stop(t + 0.3); o2.stop(t + 0.3);
                 break;
-            case 6: // Collect item — quick sparkle
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(600, t);
-                osc.frequency.exponentialRampToValueAtTime(1800, t + 0.15);
-                gain.gain.setValueAtTime(0.1, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
-                osc.start(t); osc.stop(t + 0.2);
+            }
+            case 6: { // Collect — ascending arpeggio
+                var notes = [600, 800, 1000, 1400];
+                for (var i = 0; i < notes.length; i++) {
+                    var o = audioCtx.createOscillator();
+                    var g = audioCtx.createGain();
+                    o.type = 'sine'; o.frequency.value = notes[i];
+                    g.gain.setValueAtTime(0.07, t + i * 0.06);
+                    g.gain.exponentialRampToValueAtTime(0.001, t + 0.2 + i * 0.06);
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.start(t + i * 0.06); o.stop(t + 0.25 + i * 0.06);
+                }
                 break;
-            case 7: // Sandstorm wind — noise burst
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(60, t);
-                osc.frequency.linearRampToValueAtTime(120, t + 0.3);
-                gain.gain.setValueAtTime(0.04, t);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-                osc.start(t); osc.stop(t + 0.4);
+            }
+            case 7: { // Sandstorm wind surge
+                var buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.8, audioCtx.sampleRate);
+                var d = buf.getChannelData(0);
+                var prev = 0;
+                for (var i = 0; i < d.length; i++) {
+                    var w = Math.random() * 2 - 1;
+                    d[i] = (prev + 0.04 * w) / 1.04;
+                    prev = d[i];
+                    d[i] *= 8 * Math.sin(Math.PI * i / d.length);
+                }
+                var ns = audioCtx.createBufferSource();
+                ns.buffer = buf;
+                var lpf = audioCtx.createBiquadFilter();
+                lpf.type = 'lowpass'; lpf.frequency.value = 400;
+                var g = audioCtx.createGain();
+                g.gain.setValueAtTime(0.2, t);
+                g.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+                ns.connect(lpf); lpf.connect(g); g.connect(audioCtx.destination);
+                ns.start(t); ns.stop(t + 0.8);
                 break;
+            }
         }
     } catch(e) {}
 }
 
-/* ─── INPUT ─── */
+/* ═══════════════════════════════════════════════════════════
+   POST-PROCESSING ENGINE
+   ═══════════════════════════════════════════════════════════ */
+var PP = {
+    // Pre-allocated buffers for performance
+    tmpCanvas: null, tmpCtx: null,
+    bloomCanvas: null, bloomCtx: null,
+    init: function(w, h) {
+        // Half-res for bloom (performance)
+        this.tmpCanvas = document.createElement('canvas');
+        this.tmpCanvas.width = w; this.tmpCanvas.height = h;
+        this.tmpCtx = this.tmpCanvas.getContext('2d', {willReadFrequently: true});
+        this.bloomCanvas = document.createElement('canvas');
+        this.bloomCanvas.width = w >> 1; this.bloomCanvas.height = h >> 1;
+        this.bloomCtx = this.bloomCanvas.getContext('2d', {willReadFrequently: true});
+        this.W = w; this.H = h;
+    },
+    applyFrame: function(srcCanvas, dstCanvas, time, thirst, sandstorm) {
+        var W = this.W, H = this.H;
+        var srcCtx = this.tmpCtx;
+        var bloomCtx = this.bloomCtx;
+
+        // 1) Copy source to temp
+        srcCtx.drawImage(srcCanvas, 0, 0);
+        var srcData = srcCtx.getImageData(0, 0, W, H);
+        var src = srcData.data;
+
+        // 2) Bloom extraction: downsample, threshold bright pixels
+        bloomCtx.clearRect(0, 0, W >> 1, H >> 1);
+        bloomCtx.drawImage(srcCanvas, 0, 0, W >> 1, H >> 1);
+        var bloomData = bloomCtx.getImageData(0, 0, W >> 1, H >> 1);
+        var bl = bloomData.data;
+        var bw = W >> 1;
+        for (var i = 0; i < bl.length; i += 4) {
+            var lum = bl[i] * 0.299 + bl[i+1] * 0.587 + bl[i+2] * 0.114;
+            if (lum < 160) { bl[i] = bl[i+1] = bl[i+2] = 0; }
+            else {
+                var f = (lum - 160) / 95;
+                bl[i] = (bl[i] * f * 0.6) | 0;
+                bl[i+1] = (bl[i+1] * f * 0.6) | 0;
+                bl[i+2] = (bl[i+2] * f * 0.8) | 0;
+            }
+        }
+        bloomCtx.putImageData(bloomData, 0, 0);
+
+        // 3) Blur bloom (simple box blur, 2 passes)
+        this.bloomCtx.filter = 'blur(6px)';
+        this.bloomCtx.drawImage(this.bloomCanvas, 0, 0);
+        this.bloomCtx.filter = 'none';
+
+        // 4) Compose final with post-processing
+        var dstCtx = dstCanvas.getContext('2d');
+        dstCtx.clearRect(0, 0, W, H);
+
+        // Draw base image
+        dstCtx.drawImage(srcCanvas, 0, 0);
+
+        // Apply bloom (additive)
+        dstCtx.globalCompositeOperation = 'screen';
+        dstCtx.globalAlpha = 0.35;
+        dstCtx.drawImage(this.bloomCanvas, 0, 0, W, H);
+        dstCtx.globalAlpha = 1.0;
+        dstCtx.globalCompositeOperation = 'source-over';
+
+        // 5) Chromatic aberration via pixel manipulation (subtle)
+        // Only do this at reduced resolution for performance
+        var finalData = dstCtx.getImageData(0, 0, W, H);
+        var fd = finalData.data;
+        var aberration = 1.5; // pixels offset
+        var cx = W / 2, cy = H / 2;
+        // We'll do a simplified version on every 4th pixel and interpolate
+        for (var y = 0; y < H; y += 2) {
+            for (var x = 0; x < W; x += 2) {
+                var dx = (x - cx) / cx, dy = (y - cy) / cy;
+                var dist = Math.sqrt(dx * dx + dy * dy);
+                var offset = dist * aberration;
+                if (offset < 0.2) continue;
+                var ox = dx * offset, oy = dy * offset;
+                var idx = (y * W + x) * 4;
+                // Sample red channel shifted
+                var rx = Math.min(W - 1, Math.max(0, (x + ox) | 0));
+                var ry = Math.min(H - 1, Math.max(0, (y + oy) | 0));
+                var rIdx = (ry * W + rx) * 4;
+                fd[idx] = src[rIdx]; // red from shifted position
+                // Blue from opposite shift
+                var bx = Math.min(W - 1, Math.max(0, (x - ox) | 0));
+                var by = Math.min(H - 1, Math.max(0, (y - oy) | 0));
+                var bIdx = (by * W + bx) * 4;
+                fd[idx + 2] = src[bIdx + 2]; // blue from shifted
+                // Fill adjacent pixels for 2x2 blocks
+                if (x + 1 < W) { fd[idx + 4] = fd[idx]; fd[idx + 5] = fd[idx + 1]; fd[idx + 6] = fd[idx + 2]; }
+                if (y + 1 < H) {
+                    var below = idx + W * 4;
+                    fd[below] = fd[idx]; fd[below + 1] = fd[idx + 1]; fd[below + 2] = fd[idx + 2];
+                    if (x + 1 < W) { fd[below + 4] = fd[idx]; fd[below + 5] = fd[idx + 1]; fd[below + 6] = fd[idx + 2]; }
+                }
+            }
+        }
+
+        // 6) Color grading — warm desert tones + contrast
+        for (var i = 0; i < fd.length; i += 4) {
+            // Warm shift
+            var r = fd[i], g = fd[i+1], b = fd[i+2];
+            // Contrast (S-curve approximation)
+            r = ((r / 255 - 0.5) * 1.12 + 0.5) * 255;
+            g = ((g / 255 - 0.5) * 1.08 + 0.5) * 255;
+            b = ((b / 255 - 0.5) * 1.0 + 0.5) * 255;
+            // Warm tint
+            r = r * 1.05 + 3;
+            g = g * 1.01 + 1;
+            b = b * 0.94;
+            // Clamp
+            fd[i]   = r < 0 ? 0 : r > 255 ? 255 : r | 0;
+            fd[i+1] = g < 0 ? 0 : g > 255 ? 255 : g | 0;
+            fd[i+2] = b < 0 ? 0 : b > 255 ? 255 : b | 0;
+        }
+
+        // 7) Film grain (subtle)
+        var grainT = time * 0.1;
+        for (var i = 0; i < fd.length; i += 16) { // every 4th pixel for perf
+            var grain = ((Math.sin(i * 0.1 + grainT) * 43758.5453) % 1 - 0.5) * 18;
+            fd[i]   = Math.min(255, Math.max(0, fd[i] + grain));
+            fd[i+1] = Math.min(255, Math.max(0, fd[i+1] + grain));
+            fd[i+2] = Math.min(255, Math.max(0, fd[i+2] + grain));
+        }
+
+        // 8) Vignette
+        var vignetteStrength = 0.55;
+        for (var y = 0; y < H; y++) {
+            for (var x = 0; x < W; x += 2) {
+                var dx = (x - cx) / cx, dy = (y - cy) / cy;
+                var dist = Math.sqrt(dx * dx + dy * dy);
+                var vig = 1.0 - dist * dist * vignetteStrength;
+                if (vig < 0) vig = 0;
+                var idx = (y * W + x) * 4;
+                fd[idx] = (fd[idx] * vig) | 0;
+                fd[idx+1] = (fd[idx+1] * vig) | 0;
+                fd[idx+2] = (fd[idx+2] * vig) | 0;
+                // Copy to neighbor
+                if (x + 1 < W) {
+                    fd[idx+4] = (fd[idx+4] * vig) | 0;
+                    fd[idx+5] = (fd[idx+5] * vig) | 0;
+                    fd[idx+6] = (fd[idx+6] * vig) | 0;
+                }
+            }
+        }
+
+        dstCtx.putImageData(finalData, 0, 0);
+
+        // 9) Lens flare from sun (if not indoors)
+        var sunX = (Math.sin(time * 0.008) * 0.3 + 0.5) * W;
+        var sunY = H * 0.18 + Math.sin(time * 0.012) * 15;
+        var flareAlpha = 0.15 + Math.sin(time * 0.5) * 0.05;
+
+        // Sun glow
+        var grad = dstCtx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 60);
+        grad.addColorStop(0, 'rgba(255,220,120,' + flareAlpha + ')');
+        grad.addColorStop(0.3, 'rgba(255,180,80,' + (flareAlpha * 0.5) + ')');
+        grad.addColorStop(1, 'rgba(255,150,50,0)');
+        dstCtx.fillStyle = grad;
+        dstCtx.fillRect(sunX - 60, sunY - 60, 120, 120);
+
+        // Secondary flare spots along center line
+        var flareX = W - sunX;
+        for (var f = 0; f < 3; f++) {
+            var fx = sunX + (flareX - sunX) * (0.3 + f * 0.2);
+            var fy = H * 0.5 + (sunY - H * 0.5) * (0.1 + f * 0.15);
+            var fr = 6 + f * 4;
+            var fg = dstCtx.createRadialGradient(fx, fy, 0, fx, fy, fr);
+            fg.addColorStop(0, 'rgba(255,200,120,' + (flareAlpha * 0.3) + ')');
+            fg.addColorStop(1, 'rgba(255,180,80,0)');
+            dstCtx.fillStyle = fg;
+            dstCtx.fillRect(fx - fr, fy - fr, fr * 2, fr * 2);
+        }
+
+        // 10) Thirst danger tint overlay
+        if (thirst < 25 && thirst > 0) {
+            var danger = (25 - thirst) / 25;
+            var pulse = Math.sin(time * 0.005) * 0.3 + 0.7;
+            dstCtx.fillStyle = 'rgba(180,40,20,' + (danger * 0.08 * pulse) + ')';
+            dstCtx.fillRect(0, 0, W, H);
+        }
+
+        // 11) Sandstorm color overlay
+        if (sandstorm) {
+            var ssAlpha = 0.04 + Math.sin(time * 0.01) * 0.02;
+            dstCtx.fillStyle = 'rgba(200,170,120,' + ssAlpha + ')';
+            dstCtx.fillRect(0, 0, W, H);
+        }
+    }
+};
+
+/* ═══════════════════════════════════════════════════════════
+   INPUT
+   ═══════════════════════════════════════════════════════════ */
 var kbMX=0,kbMY=0,kbT=0, tMX=0,tMY=0,tT=0, keys={};
 var sprintTouch = false;
 document.addEventListener('keydown',function(e){keys[e.key]=true;
@@ -280,14 +623,26 @@ function drawTitleBg(t){
   // Sun
   var sx=w*0.6+Math.sin(t*0.0003)*w*0.15;
   var sy=h*0.3-Math.sin(t*0.0005)*h*0.1;
-  for(var dy=-15;dy<=15;dy++)for(var dx=-15;dx<=15;dx++){
-    if(dx*dx+dy*dy>225)continue;
+  for(var dy=-20;dy<=20;dy++)for(var dx=-20;dx<=20;dx++){
+    if(dx*dx+dy*dy>400)continue;
     var px=Math.floor(sx+dx),py=Math.floor(sy+dy);
     if(px>=0&&px<w&&py>=0&&py<h){
       var idx=(py*w+px)*4;
-      var d=Math.sqrt(dx*dx+dy*dy)/15;
+      var d=Math.sqrt(dx*dx+dy*dy)/20;
       img.data[idx]=255;img.data[idx+1]=Math.floor(200*(1-d)+img.data[idx+1]*d);
       img.data[idx+2]=Math.floor(80*(1-d)+img.data[idx+2]*d);
+    }
+  }
+  // Stars in upper portion
+  for(var i=0;i<30;i++){
+    var stx=(Math.sin(i*127.1)*43758.5)%1; if(stx<0)stx+=1;
+    var sty=(Math.sin(i*311.7)*43758.5)%1; if(sty<0)sty+=1;
+    var sx2=Math.floor(stx*w),sy2=Math.floor(sty*h*0.4);
+    var twinkle=Math.sin(t*0.002+i*3)*0.5+0.5;
+    var si=(sy2*w+sx2)*4;
+    if(si>=0&&si<img.data.length-3){
+      img.data[si]=255;img.data[si+1]=255;img.data[si+2]=220;
+      img.data[si+3]=Math.floor(twinkle*180);
     }
   }
   titleCtx.putImageData(img,0,0);
@@ -295,7 +650,9 @@ function drawTitleBg(t){
 var titleAnimId;
 function animateTitle(t){drawTitleBg(t);titleAnimId=requestAnimationFrame(animateTitle)}
 
-/* ─── Emscripten + Game Loop ─── */
+/* ═══════════════════════════════════════════════════════════
+   EMSCRIPTEN + GAME LOOP
+   ═══════════════════════════════════════════════════════════ */
 var Module={
   onRuntimeInitialized:function(){
     document.getElementById('loading').style.display='none';
@@ -304,7 +661,10 @@ var Module={
     Module._init();
 
     var cv=document.getElementById('c'),ctx=cv.getContext('2d');
+    var fxCv=document.getElementById('cFX');
     var img=ctx.createImageData(800,450);
+    PP.init(800, 450);
+
     var running=false,lastT=0,wasDead=false;
 
     document.getElementById('title').onclick=function(){
@@ -323,10 +683,12 @@ var Module={
     };
 
     var dirs=['N','NE','E','SE','S','SW','W','NW'];
+    var frameCount = 0;
 
     function loop(t){
       if(!running)return;
       var dt=Math.min((t-lastT)/1000,0.05);lastT=t;
+      frameCount++;
 
       // Input
       kbMX=kbMY=kbT=0;
@@ -345,28 +707,40 @@ var Module={
       Module._update_game(dt);
       Module._render_game();
 
-      // Blit
+      // Blit to source canvas
       var fbPtr=Module._get_framebuffer();
       var heap=Module.HEAPU8||HEAPU8; var src=new Uint8Array(heap.buffer,fbPtr,800*450*4);
       img.data.set(src);
       ctx.putImageData(img,0,0);
+
+      // Post-processing (skip every other frame on low-end for perf)
+      var th = Module._get_thirst();
+      var sandstorm = Module._get_sandstorm();
+      PP.applyFrame(cv, fxCv, t, th, sandstorm);
 
       // Sound
       var snd=Module._get_sound();
       if(snd>0) playSound(snd);
 
       // HUD
-      var th=Module._get_thirst();
       var sc=Module._get_score();
       var ang=Module._get_angle();
       var sprinting=Module._get_sprint();
       var combo=Module._get_combo();
-      var sandstorm=Module._get_sandstorm();
 
       document.getElementById('tv').textContent=Math.round(th)+'%';
       var fill=document.getElementById('tf');
       fill.style.width=th+'%';
-      fill.style.background=th<15?'#d03030':th<35?'#d0a030':'#44aaff';
+      if(th<15){
+        fill.style.background='linear-gradient(90deg,#a02020,#d03030)';
+        fill.className='bar-fill danger';
+      } else if(th<35){
+        fill.style.background='linear-gradient(90deg,#b08020,#d0a030)';
+        fill.className='bar-fill warning';
+      } else {
+        fill.style.background='linear-gradient(90deg,#2288ee,#44aaff)';
+        fill.className='bar-fill';
+      }
       document.getElementById('sv').textContent=sc;
 
       // Combo
@@ -376,7 +750,9 @@ var Module={
 
       // Sandstorm warning
       var ssEl=document.getElementById('sandstorm-warn');
-      if(sandstorm){ssEl.style.display='block';}else{ssEl.style.display='none';}
+      var ssOverlay=document.getElementById('sandstorm-overlay');
+      if(sandstorm){ssEl.style.display='block';ssOverlay.classList.add('active');}
+      else{ssEl.style.display='none';ssOverlay.classList.remove('active');}
 
       // Compass
       var di=Math.round(((ang%(Math.PI*2))+Math.PI*2)%(Math.PI*2)/(Math.PI/4))%8;

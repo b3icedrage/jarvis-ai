@@ -1,10 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
-// OASIS v5 — 3D Desert Survival Raycasting Game
+// OASIS v7 — Ready Player One Inspired Neon Cyberpunk Raycaster
 //
-// VFX: heat shimmer, screen shake, death burst, sand trails,
-//      water splashes, dust devils, oasis glow.
-// SFX signals: footstep, drink, death, warning, door, splash,
-//              heartbeat, sprint.
+// Deep space sky, neon grid floors, cyberpunk walls with glow edges,
+// holographic portals, planets, nebula, lens flares, digital fog.
 //
 // Compiled to WebAssembly via Emscripten → runs in any browser.
 // ═══════════════════════════════════════════════════════════════════
@@ -14,6 +12,7 @@
 #include <cmath>
 #include <cstring>
 #include <cstdlib>
+#include <algorithm>
 
 static const int SW = 800, SH = 450;
 static const int TEX = 64;
@@ -112,11 +111,11 @@ static inline double smoothstep(double t) {
     return t * t * (3.0 - 2.0 * t);
 }
 static inline uint32_t fogC(uint32_t c, double d) {
-    double f = clampd(d / 16.0, 0.0, 1.0); f *= f;
+    double f = clampd(d / 18.0, 0.0, 1.0); f *= f;
     uint8_t r = c & 0xFF, g = (c >> 8) & 0xFF, b = (c >> 16) & 0xFF;
-    r = (uint8_t)(r + (218 - r) * f);
-    g = (uint8_t)(g + (196 - g) * f);
-    b = (uint8_t)(b + (158 - b) * f);
+    r = (uint8_t)(r + (15 - r) * f);  // fog: deep space purple-black
+    g = (uint8_t)(g + (5 - g) * f);
+    b = (uint8_t)(b + (25 - b) * f);
     return rgb(r, g, b);
 }
 static inline int maxI(int a, int b) { return a > b ? a : b; }
@@ -149,40 +148,75 @@ static void genTextures() {
     for (int y = 0; y < TEX; y++)
     for (int x = 0; x < TEX; x++) {
         uint8_t n = h8(x, y), n2 = h8(x*3+7, y*5+13), n3 = h8(x*7+31, y*11+97);
-        // 0: Sandstone wall
-        { int by=y%16, bx=x%32; bool mV=(bx==0)||(bx==16&&by>=8), mH=(by==0)||(by==1&&n>200), m=mV||mH;
-          double bX=0,bY=0; if(!m){int lx=(bx==0)?16:bx;bX=(lx<8)?(8.0-lx)/8.0:(lx-8.0)/8.0;bY=(by<8)?(8.0-by)/8.0:(by-8.0)/8.0;bX=1-bX*0.4;bY=1-bY*0.3;}
-          double l=bX*bY; uint8_t r,g,b; if(m){r=165+n/12;g=148+n/14;b=120+n/16;}else{r=(uint8_t)((210+n/8-10)*l);g=(uint8_t)((188+n/10-8)*l);b=(uint8_t)((152+n/12-6)*l);if(n2>230){r-=12;g-=10;b-=8;}if(n3>245){r+=8;g+=6;b+=4;}}
-          textures[0][y*TEX+x]=rgb((uint8_t)clampd(r,0,255),(uint8_t)clampd(g,0,255),(uint8_t)clampd(b,0,255)); }
-        // 1: Interior floor
-        { int tx=x%32,ty=y%32; bool gr=(tx==0||ty==0||tx==1||ty==1); double dx=(tx-16.0)/16.0,dy=(ty-16.0)/16.0; double ts=1-(dx*dx+dy*dy)*0.15;
-          uint8_t r,g,b; if(gr){r=90+n/10;g=82+n/12;b=70+n/14;}else{double bs=ts;r=(uint8_t)clampd((160+n/6)*bs,0,255);g=(uint8_t)clampd((148+n/8)*bs,0,255);b=(uint8_t)clampd((130+n/10)*bs,0,255);if(n2>240){r-=15;g-=12;b-=8;}}
-          textures[1][y*TEX+x]=rgb(r,g,b); }
-        // 2: Furniture
-        { double gr=sin((double)y*0.5+n*0.012)*0.15+0.85, g2=sin((double)x*0.3+y*0.7)*0.08+0.92;
-          double ex=(x<2)?(2-x)/2.0:(x>=62)?(x-62)/2.0:0, ey=(y<2)?(2-y)/2.0:(y>=62)?(y-62)/2.0:0;
-          double es=1-(ex+ey)*0.4, sh=gr*g2*es;
-          uint8_t r=(uint8_t)clampd(135*sh+n/12,0,255), g=(uint8_t)clampd(95*sh+n/14,0,255), b=(uint8_t)clampd(45*sh+n/18,0,255);
-          if(y%8==0){r-=20;g-=15;b-=10;} textures[2][y*TEX+x]=rgb(r,g,b); }
-        // 3: Desert sand
-        { double peb=0; if(n2>225){int px=x%8,py=y%8;double pd=sqrt((double)(px-4)*(px-4)+(double)(py-4)*(py-4));if(pd<2.5)peb=1-pd/2.5;}
-          double rp=sin((double)x*0.3+(double)y*0.1)*0.04, bs=1+rp;
-          textures[3][y*TEX+x]=rgb((uint8_t)clampd((195+n/6-8)*bs-peb*25,0,255),(uint8_t)clampd((165+n/8-6)*bs-peb*18,0,255),(uint8_t)clampd((110+n/10-5)*bs-peb*10,0,255)); }
-        // 4: Ceiling
-        { bool bX=(x%32<3),bY=(y%32<3),ib=bX||bY; double gr=sin((double)y*0.3+x*0.2+n*0.01)*0.06+0.94;
-          uint8_t r,g,b; if(ib){double gb=sin((double)y*0.8+n*0.015)*0.1+0.9;r=(uint8_t)clampd(95*gb+n/14,0,255);g=(uint8_t)clampd(72*gb+n/16,0,255);b=(uint8_t)clampd(40*gb+n/20,0,255);}
-          else{r=(uint8_t)clampd((145+n/10)*gr,0,255);g=(uint8_t)clampd((130+n/12)*gr,0,255);b=(uint8_t)clampd((105+n/14)*gr,0,255);if(n2>235){r-=10;g-=8;b-=6;}}
-          textures[4][y*TEX+x]=rgb(r,g,b); }
-        // 5: Door
-        { int pl=x%16; bool pe=(pl==0||pl==15),pm=(pl==7||pl==8),cb=(y>=24&&y<=28)||(y>=44&&y<=48);
-          bool st=false; int sx=x%32,sy=y%32;
-          if((sx==8||sx==24)&&(sy==12||sy==20||sy==36||sy==44)){double sd=sqrt((double)(sx-(sx<16?8:24))*(sx-(sx<16?8:24))+(double)(sy-(sy<28?(sy<16?12:20):(sy<40?36:44)))*(sy-(sy<28?(sy<16?12:20):(sy<40?36:44))));if(sd<2.5)st=true;}
-          double gr=sin((double)y*0.6+n*0.01)*0.08+0.92; uint8_t r,g,b;
-          if(st){double sh=1-((double)(sx%32-8)*(sx%32-8)+(double)(sy%32-(sy<28?12:36))*(sy%32-(sy<28?12:36)))/6.25;if(sh<0)sh=0;r=(uint8_t)clampd(60+40*sh+n/16,0,255);g=(uint8_t)clampd(55+35*sh+n/18,0,255);b=(uint8_t)clampd(50+30*sh+n/20,0,255);}
-          else if(cb){r=(uint8_t)clampd(75*gr+n/14,0,255);g=(uint8_t)clampd(55*gr+n/16,0,255);b=(uint8_t)clampd(30*gr+n/20,0,255);}
-          else if(pe||pm){r=(uint8_t)clampd(55+n/16,0,255);g=(uint8_t)clampd(42+n/18,0,255);b=(uint8_t)clampd(22+n/22,0,255);}
-          else{r=(uint8_t)clampd((120+n/8)*gr,0,255);g=(uint8_t)clampd((88+n/10)*gr,0,255);b=(uint8_t)clampd((45+n/14)*gr,0,255);}
-          textures[5][y*TEX+x]=rgb(r,g,b); }
+        // 0: Cyberpunk wall — dark panel with neon cyan edge glow
+        {
+          bool edge=(x<2)||(x>=62)||(y<2)||(y>=62);
+          bool gridH=(y%16==0), gridV=(x%16==0);
+          bool isEdge=edge||gridH||gridV;
+          double glow=0;
+          if(isEdge){double ex_=x<2?(2.0-x)/2.0:(x>=62?(x-62.0)/2.0:0);
+                     double ey_=y<2?(2.0-y)/2.0:(y>=62?(y-62.0)/2.0:0);
+                     glow=1.0-std::min(ex_,ey_)*0.5; glow*=glow;}
+          uint8_t baseR=18+n/8, baseG=12+n/10, baseB=28+n/6;
+          uint8_t nr=(uint8_t)clampd(baseR+glow*120,0,255);
+          uint8_t ng=(uint8_t)clampd(baseG+glow*220,0,255);
+          uint8_t nb=(uint8_t)clampd(baseB+glow*255,0,255);
+          // Circuit trace pattern
+          if(!isEdge&&n2>200&&n3>180){nr=(uint8_t)clampd(nr+15,0,255);ng=(uint8_t)clampd(ng+30,0,255);nb=(uint8_t)clampd(nb+40,0,255);}
+          textures[0][y*TEX+x]=rgb(nr,ng,nb);
+        }
+        // 1: Interior floor — dark with cyan grid lines
+        {
+          bool gx=(x%8==0), gy=(y%8==0);
+          double dx_=(x-32.0)/32.0, dy_=(y-32.0)/32.0;
+          double dist=sqrt(dx_*dx_+dy_*dy_);
+          uint8_t r=15+n/12, g=10+n/14, b=22+n/8;
+          if(gx||gy){r=20;g=60+(uint8_t)(sin((double)x*0.5)*20);b=120+(uint8_t)(sin((double)y*0.3)*30);}
+          // Center glow
+          double cg=1.0-dist*1.5; if(cg>0){cg*=cg;r=(uint8_t)clampd(r+cg*20,0,255);g=(uint8_t)clampd(g+cg*40,0,255);b=(uint8_t)clampd(b+cg*60,0,255);}
+          textures[1][y*TEX+x]=rgb(r,g,b);
+        }
+        // 2: Furniture → server rack / tech block
+        {
+          bool slot=(y%8>=1&&y%8<=3);
+          bool led=(x%16==8&&y%16==4);
+          uint8_t r=12+n/10, g=10+n/12, b=18+n/8;
+          if(slot){r=25;g=22;b=35;}
+          if(led){r=40;g=200;b=100;} // green LED indicator
+          textures[2][y*TEX+x]=rgb(r,g,b);
+        }
+        // 3: Floor grid — dark with neon purple/cyan grid lines
+        {
+          bool gx=(x%16==0), gy=(y%16==0);
+          double dx_=(double)x/TEX, dy_=(double)y/TEX;
+          uint8_t r=8+n/14, g=5+n/16, b=15+n/10;
+          if(gx){uint8_t gv=(uint8_t)(sin(dy_*6.28)*20+40);r=10;g=gv;b=(uint8_t)(120+sin(dy_*3.14)*40);}
+          if(gy){uint8_t gv=(uint8_t)(sin(dx_*6.28)*20+40);r=10;g=gv;b=(uint8_t)(120+sin(dx_*3.14)*40);}
+          textures[3][y*TEX+x]=rgb(r,g,b);
+        }
+        // 4: Ceiling — dark with glowing panels
+        {
+          bool panel=(x%32>=1&&x%32<=30&&y%32>=1&&y%32<=30);
+          bool edge_=(x%32==0||x%32==31||y%32==0||y%32==31);
+          uint8_t r=10+n/12, g=8+n/14, b=20+n/8;
+          if(edge_){r=15;g=40;b=100;}
+          if(panel){double px_=(x%32-16.0)/16.0,py_=(y%32-16.0)/16.0;
+                    double pg=1.0-(px_*px_+py_*py_)*0.5; if(pg<0)pg=0;
+                    r=(uint8_t)clampd(r+pg*25,0,255);g=(uint8_t)clampd(g+pg*50,0,255);b=(uint8_t)clampd(b+pg*80,0,255);}
+          textures[4][y*TEX+x]=rgb(r,g,b);
+        }
+        // 5: Door — holographic energy gate
+        {
+          double dx_=(x-32.0)/32.0, dy_=(y-32.0)/32.0;
+          double ring=sqrt(dx_*dx_+dy_*dy_);
+          double pulse=sin((double)y*0.2)*0.3+0.7;
+          uint8_t r=10, g=(uint8_t)(30+ring*80), b=(uint8_t)(80+ring*120);
+          if(ring>0.85&&ring<1.0){double glow_=1.0-fabs(ring-0.925)/0.075;
+            r=(uint8_t)clampd(r+glow_*100,0,255);g=(uint8_t)clampd(g+glow_*200,0,255);b=(uint8_t)clampd(b+glow_*255,0,255);}
+          if(ring<0.85){double inner=sin(ring*20-gTime*4)*0.15+0.85;
+            r=(uint8_t)(r*inner*pulse);g=(uint8_t)(g*inner*pulse);b=(uint8_t)(b*inner*pulse);}
+          textures[5][y*TEX+x]=rgb(r,g,b);
+        }
     }
 }
 
@@ -362,67 +396,90 @@ static void renderFrame() {
             }
         }else{
             for(int y=0;y<cT;y++){
-                double t=(double)y/(SH*0.5),ts=t*t*(3-2*t);
-                uint8_t sr=(uint8_t)clampd(lerp(45,220,ts)*bright,0,255);
-                uint8_t sg=(uint8_t)clampd(lerp(70,195,ts)*bright,0,255);
-                uint8_t sb=(uint8_t)clampd(lerp(140,165,ts)*bright,0,255);
-                // Horizon warm glow (sunset/sunrise band)
-                double hzDist=fabs(t-0.35);
-                if(hzDist<0.15){double hz=1.0-hzDist/0.15;hz*=hz;
-                    uint8_t hzR=(uint8_t)clampd(sr+80*hz,0,255);
-                    uint8_t hzG=(uint8_t)clampd(sg+40*hz*bright,0,255);
-                    uint8_t hzB=(uint8_t)clampd(sb-20*hz,0,255);
-                    sr=hzR;sg=hzG;sb=hzB;}
-                // Sun disc + glow + lens flare
-                double dsx=x-sunSX,dsy=y-sunSY,sunDist=sqrt(dsx*dsx+dsy*dsy);
-                // Outer glow halo (wide, soft)
-                if(sunDist<sunR*5){double g_=1-sunDist/(sunR*5);g_*=g_*g_;sr=(uint8_t)clampd(sr+200*g_*bright,0,255);sg=(uint8_t)clampd(sg+160*g_*bright,0,255);sb=(uint8_t)clampd(sb+80*g_*bright,0,255);}
-                // Inner glow
-                if(sunDist<sunR*2.5){double g_=1-sunDist/(sunR*2.5);g_*=g_;sr=(uint8_t)clampd(sr+255*g_*bright,0,255);sg=(uint8_t)clampd(sg+220*g_*bright,0,255);sb=(uint8_t)clampd(sb+120*g_*bright,0,255);}
-                // Sun disc
-                if(sunDist<sunR){double sf=1-sunDist/sunR;sf*=sf;sr=(uint8_t)clampd(lerp(sr,255,sf),0,255);sg=(uint8_t)clampd(lerp(sg,250,sf),0,255);sb=(uint8_t)clampd(lerp(sb,200,sf),0,255);}
-                // Lens flare streaks (horizontal + vertical + diagonal)
-                double flareAngle=atan2(dsy,dsx);
-                double flareDist=sunDist/(sunR*6);
-                if(flareDist<1.0&&flareDist>0.1){
-                    double hStreak=fabs(cos(flareAngle));double vStreak=fabs(sin(flareAngle));
-                    double streak=hStreak*0.6+vStreak*0.4;
-                    double flareBright=(1.0-flareDist)*streak*0.3*bright;
-                    if(flareBright>0.01){sr=(uint8_t)clampd(sr+180*flareBright,0,255);sg=(uint8_t)clampd(sg+150*flareBright,0,255);sb=(uint8_t)clampd(sb+80*flareBright,0,255);}
-                }
-                // Procedural clouds (FBM-like noise)
+                double t=(double)y/(SH*0.5);
+                // Deep space gradient: black → dark purple → faint blue at horizon
+                uint8_t sr=(uint8_t)clampd(lerp(3,12,t)*bright,0,255);
+                uint8_t sg=(uint8_t)clampd(lerp(1,5,t)*bright,0,255);
+                uint8_t sb=(uint8_t)clampd(lerp(8,35,t)*bright,0,255);
+                // Nebula clouds (purple/cyan haze)
                 {
-                    double cloudX=(double)x*0.008+gTime*0.012;
-                    double cloudY=(double)y*0.012;
-                    double cn=0;
-                    cn+=sin(cloudX*3.1+cloudY*1.7)*0.5;
-                    cn+=sin(cloudX*5.3-cloudY*2.9+1.3)*0.25;
-                    cn+=sin(cloudX*8.7+cloudY*4.1+3.7)*0.125;
-                    cn+=sin(cloudX*13.1-cloudY*6.3+7.1)*0.0625;
-                    cn=(cn+0.5)*0.8;
-                    double cloudMask=clampd((cn-0.35)*4.0,0.0,1.0);
-                    double cloudBright=clampd(0.6+bright*0.5,0.5,1.0);
-                    uint8_t cr=(uint8_t)clampd(sr+(220*cloudBright-sr)*cloudMask*0.5,0,255);
-                    uint8_t cg=(uint8_t)clampd(sg+(210*cloudBright-sg)*cloudMask*0.5,0,255);
-                    uint8_t cb=(uint8_t)clampd(sb+(200*cloudBright-sb)*cloudMask*0.5,0,255);
-                    sr=cr;sg=cg;sb=cb;
+                    double nX=(double)x*0.004+gTime*0.003;
+                    double nY=(double)y*0.006;
+                    double nn=sin(nX*2.1+nY*1.3)*0.5+sin(nX*4.7-nY*2.8+2.1)*0.25+sin(nX*7.3+nY*5.1+4.5)*0.125;
+                    double nebulaMask=clampd((nn+0.3)*1.5,0,1); nebulaMask*=nebulaMask;
+                    sr=(uint8_t)clampd(sr+nebulaMask*60*bright,0,255);
+                    sg=(uint8_t)clampd(sg+nebulaMask*15*bright,0,255);
+                    sb=(uint8_t)clampd(sb+nebulaMask*80*bright,0,255);
                 }
-                // Mountain silhouette on horizon
+                // Stars (always visible, brighter at night)
                 {
-                    double mtnX=(double)x*0.015;
-                    double mtnH=12+18*sin(mtnX*0.7)+8*sin(mtnX*2.3)+4*sin(mtnX*5.1);
-                    int mtnTop=(int)(cT*0.6-mtnH);
-                    if(y>cT*0.55&&y<cT*0.65&&y>cT-mtnH/15.0*3.0){
-                        double mtnFade=clampd((double)(y-(int)(cT*0.55))/(mtnH/5.0),0,1);
-                        double mtnDark=0.25-mtnFade*0.15;
-                        sr=(uint8_t)clampd(sr*mtnDark,0,255);
-                        sg=(uint8_t)clampd(sg*mtnDark,0,255);
-                        sb=(uint8_t)clampd(sb*(mtnDark+0.02),0,255);
+                    double sx_=(double)x*0.1, sy_=(double)y*0.1;
+                    double sn=h8((int)(sx_)&255,(int)(sy_)&255)/255.0;
+                    if(sn>0.97){double starBright=(sn-0.97)*33.0;
+                        double twinkle=sin(gTime*2.0+sx_*0.7+sy_*0.3)*0.3+0.7;
+                        starBright*=twinkle*clampd(1.0-t*0.5,0.3,1.0);
+                        sr=(uint8_t)clampd(sr+starBright*255,0,255);
+                        sg=(uint8_t)clampd(sg+starBright*240,0,255);
+                        sb=(uint8_t)clampd(sb+starBright*200,0,255);
+                    }
+                }
+                // Planet 1 (large, left side)
+                {
+                    double plX_=SW*0.2, plY_=cT*0.3, plR=35.0;
+                    double pdx_=x-plX_, pdy_=y-plY_;
+                    double pd_=sqrt(pdx_*pdx_+pdy_*pdy_);
+                    if(pd_<plR){double n_=pd_/plR;
+                        double lit=1.0-n_*n_*0.6; double rim=(pd_>plR*0.85)?(1.0-(pd_-plR*0.85)/(plR*0.15)):0;
+                        uint8_t pr=(uint8_t)clampd(30*lit+rim*80,0,255);
+                        uint8_t pg=(uint8_t)clampd(20*lit+rim*40,0,255);
+                        uint8_t pb=(uint8_t)clampd(60*lit+rim*100,0,255);
+                        sr=pr;sg=pg;sb=pb;
+                    }
+                }
+                // Planet 2 (small, right side, cyan)
+                {
+                    double plX2=SW*0.82, plY2=cT*0.25, plR2=20.0;
+                    double pdx2=x-plX2, pdy2=y-plY2;
+                    double pd2=sqrt(pdx2*pdx2+pdy2*pdy2);
+                    if(pd2<plR2){double n2_=pd2/plR2;
+                        double lit2=1.0-n2_*n2_*0.5; double rim2=(pd2>plR2*0.8)?(1.0-(pd2-plR2*0.8)/(plR2*0.2)):0;
+                        sr=(uint8_t)clampd(sr+lit2*20+rim2*60,0,255);
+                        sg=(uint8_t)clampd(sg+lit2*50+rim2*120,0,255);
+                        sb=(uint8_t)clampd(sb+lit2*70+rim2*160,0,255);
+                    }
+                }
+                // Horizon glow — neon purple line where sky meets ground
+                {
+                    double hzDist=fabs(t-0.85);
+                    if(hzDist<0.12){double hz=1.0-hzDist/0.12;hz*=hz*hz;
+                        sr=(uint8_t)clampd(sr+hz*80,0,255);
+                        sg=(uint8_t)clampd(sg+hz*10,0,255);
+                        sb=(uint8_t)clampd(sb+hz*120,0,255);
+                    }
+                }
+                // Cyan sun / digital star
+                {
+                    double sunX=SW*0.5+sin(gTime*0.01)*SW*0.3;
+                    double sunY=cT*0.4;
+                    double sdx_=x-sunX, sdy_=y-sunY;
+                    double sd_=sqrt(sdx_*sdx_+sdy_*sdy_);
+                    // Wide glow
+                    if(sd_<40){double g_=1-sd_/40;g_*=g_;sr=(uint8_t)clampd(sr+g_*30,0,255);sg=(uint8_t)clampd(sg+g_*80,0,255);sb=(uint8_t)clampd(sb+g_*120,0,255);}
+                    // Core
+                    if(sd_<8){double sf=1-sd_/8;sf*=sf;
+                        sr=(uint8_t)clampd(lerp(sr,200,sf),0,255);
+                        sg=(uint8_t)clampd(lerp(sg,230,sf),0,255);
+                        sb=(uint8_t)clampd(lerp(sb,255,sf),0,255);}
+                    // Lens flare
+                    if(sd_>8&&sd_<50&&sd_<30){
+                        double angle_=atan2(sdy_,sdx_);
+                        double streak=fabs(cos(angle_))*0.4+fabs(sin(angle_))*0.3;
+                        double fb_=(1-sd_/30)*streak*0.2;
+                        sg=(uint8_t)clampd(sg+fb_*200,0,255);sb=(uint8_t)clampd(sb+fb_*255,0,255);
                     }
                 }
                 fb[y*SW+x]=rgb(sr,sg,sb);
             }
-            // Stars at night (when bright < 0.7)
             if(bright<0.7){
                 float nightness=(float)(1.0-bright/0.7);
                 for(int si=0;si<numStars;si++){
@@ -463,7 +520,7 @@ static void renderFrame() {
             int tx=((int)(fx_*TEX))&(TEX-1),ty=((int)(fy_*TEX))&(TEX-1);
             uint32_t fc; uint8_t fr,fg,fb_;
             if(isInsideHouse(fx_,fy_)){fc=textures[1][ty*TEX+tx];fr=fc&0xFF;fg=(fc>>8)&0xFF;fb_=(fc>>16)&0xFF;double fl=clampd(0.65-rowD/30.0,0.25,0.65)*bright;fr=(uint8_t)clampd(fr*fl,0,255);fg=(uint8_t)clampd(fg*fl,0,255);fb_=(uint8_t)clampd(fb_*fl,0,255);}
-            else{fc=textures[3][ty*TEX+tx];fr=fc&0xFF;fg=(fc>>8)&0xFF;fb_=(fc>>16)&0xFF;double fl=clampd(1-rowD/25.0,0.3,1)*bright;double fd=rdx*lightDirX+rdy*lightDirY;fl*=(0.9+0.1*fd);fr=(uint8_t)clampd(fr*fl,0,255);fg=(uint8_t)clampd(fg*fl,0,255);fb_=(uint8_t)clampd(fb_*fl,0,255);}
+            else{fc=textures[3][ty*TEX+tx];fr=fc&0xFF;fg=(fc>>8)&0xFF;fb_=(fc>>16)&0xFF;double fl=clampd(1-rowD/25.0,0.2,1)*bright;fr=(uint8_t)clampd(fr*fl,0,255);fg=(uint8_t)clampd(fg*fl,0,255);fb_=(uint8_t)clampd(fb_*fl,0,255);}
             fb[y*SW+x]=fogC(rgb(fr,fg,fb_),rowD);
         }
         zbuf[x]=pd;
