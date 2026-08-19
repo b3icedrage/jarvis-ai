@@ -484,7 +484,7 @@ static void renderFrame() {
         }
     }
 
-    // ── Player sprite (third person only) ──
+    // ── Player sprite (third person only, with walk animation) ──
     if(thirdPerson){
         double pdx_=pX-camX, pdy_=pY-camY;
         double dirX=cos(pA),dirY=sin(pA),plX=-sin(pA)*tanHalf,plY=cos(pA)*tanHalf;
@@ -494,34 +494,125 @@ static void renderFrame() {
             int scrX_=(int)(SW/2.0*(1+tX_/tY_));
             int spH_=maxI(1,(int)(SH/tY_*0.7));
             int spW_=spH_/3;
-            // Body
-            uint32_t bodyCol=rgb(195,170,130);
+            double dist3d=sqrt(pdx_*pdx_+pdy_*pdy_);
+            // Walk animation
+            double speed=sqrt(iMX*iMX+iMY*iMY);
+            double walkAmt=speed>0.1 ? sin(bobPhase*10.0)*1.0 : 0.0;
+            double legSwing=walkAmt*spH_*0.08;
+            double armSwing=walkAmt*spH_*0.06;
+            double torsoBob=speed>0.1 ? fabs(sin(bobPhase*10.0))*spH_*0.012 : 0.0;
             uint32_t headCol=rgb(175,145,110);
+            uint32_t bodyCol=rgb(195,170,130);
+            uint32_t shirtCol=rgb(170,140,100);
             uint32_t legCol=rgb(160,140,100);
+            uint32_t bootCol=rgb(120,95,60);
+            uint32_t armCol=rgb(185,158,118);
+            uint32_t hatCol=rgb(150,120,80);
             for(int dy_=-spH_/2;dy_<=spH_/2;dy_++){
-                int screenY_=SH/2-bob+dy_;
+                int screenY_=SH/2-bob+dy_+(int)torsoBob;
                 if(screenY_<0||screenY_>=SH)continue;
-                // Body shape
                 double normY=(double)dy_/(spH_/2.0);
-                int halfW;
-                if(normY<-0.6)halfW=spW_/3; // head
-                else if(normY<-0.1)halfW=spW_/2; // shoulders
-                else if(normY<0.6)halfW=spW_/3; // torso
-                else halfW=spW_/4; // legs
-                for(int dx_=-halfW;dx_<=halfW;dx_++){
-                    int screenX_=scrX_+dx_+shkX;
-                    if(screenX_<0||screenX_>=SW)continue;
-                    if(tY_>=zbuf[screenX_])continue;
-                    uint32_t col;
-                    if(normY<-0.5)col=headCol;
-                    else if(normY<0.5)col=bodyCol;
-                    else col=legCol;
-                    // Side shading
-                    if(dx_<0)col=fogC(rgb((uint8_t)((col&0xFF)*0.8),((col>>8)&0xFF)*0.8,((col>>16)&0xFF)*0.8),sqrt(pdx_*pdx_+pdy_*pdy_));
-                    else col=fogC(col,sqrt(pdx_*pdx_+pdy_*pdy_));
-                    fb[screenY_*SW+screenX_]=col;
+                // Left leg
+                if(normY>0.15 && normY<0.95) {
+                    int legW=spW_/5, legCX=scrX_ - spW_/5 + (int)legSwing;
+                    for(int dx_=-legW;dx_<=legW;dx_++) {
+                        int sx_=legCX+dx_+shkX;
+                        if(sx_<0||sx_>=SW||tY_>=zbuf[sx_])continue;
+                        uint32_t col=normY>0.8?bootCol:legCol;
+                        if(dx_<0) col=fogC(rgb((uint8_t)((col&0xFF)*0.82),((col>>8)&0xFF)*0.82,((col>>16)&0xFF)*0.82),dist3d);
+                        else col=fogC(col,dist3d);
+                        fb[screenY_*SW+sx_]=col;
+                    }
+                }
+                // Right leg
+                if(normY>0.15 && normY<0.95) {
+                    int legW=spW_/5, legCX=scrX_ + spW_/5 - (int)legSwing;
+                    for(int dx_=-legW;dx_<=legW;dx_++) {
+                        int sx_=legCX+dx_+shkX;
+                        if(sx_<0||sx_>=SW||tY_>=zbuf[sx_])continue;
+                        uint32_t col=normY>0.8?bootCol:legCol;
+                        if(dx_<0) col=fogC(rgb((uint8_t)((col&0xFF)*0.82),((col>>8)&0xFF)*0.82,((col>>16)&0xFF)*0.82),dist3d);
+                        else col=fogC(col,dist3d);
+                        fb[screenY_*SW+sx_]=col;
+                    }
+                }
+                // Torso
+                if(normY>-0.35 && normY<0.25) {
+                    int torsoW=spW_/3;
+                    for(int dx_=-torsoW;dx_<=torsoW;dx_++) {
+                        int sx_=scrX_+dx_+shkX;
+                        if(sx_<0||sx_>=SW||tY_>=zbuf[sx_])continue;
+                        uint32_t col=normY>0.18?rgb(140,100,50):shirtCol;
+                        if(dx_<0) col=fogC(rgb((uint8_t)((col&0xFF)*0.85),((col>>8)&0xFF)*0.85,((col>>16)&0xFF)*0.85),dist3d);
+                        else col=fogC(col,dist3d);
+                        fb[screenY_*SW+sx_]=col;
+                    }
+                }
+                // Left arm
+                if(normY>-0.3 && normY<0.2) {
+                    int armW=spW_/6, armCX=scrX_ - spW_/3 - armW - (int)armSwing;
+                    int armDY=(int)(fabs(armSwing)*0.3);
+                    for(int dx_=-armW;dx_<=armW;dx_++) {
+                        int sx_=armCX+dx_+shkX, sy_=screenY_+armDY;
+                        if(sx_<0||sx_>=SW||sy_<0||sy_>=SH||tY_>=zbuf[sx_])continue;
+                        uint32_t col=normY<-0.2?armCol:shirtCol;
+                        fb[sy_*SW+sx_]=fogC(col,dist3d);
+                    }
+                }
+                // Right arm
+                if(normY>-0.3 && normY<0.2) {
+                    int armW=spW_/6, armCX=scrX_ + spW_/3 + armW + (int)armSwing;
+                    int armDY=(int)(fabs(armSwing)*0.3);
+                    for(int dx_=-armW;dx_<=armW;dx_++) {
+                        int sx_=armCX+dx_+shkX, sy_=screenY_+armDY;
+                        if(sx_<0||sx_>=SW||sy_<0||sy_>=SH||tY_>=zbuf[sx_])continue;
+                        uint32_t col=normY<-0.2?armCol:shirtCol;
+                        fb[sy_*SW+sx_]=fogC(col,dist3d);
+                    }
+                }
+                // Head
+                if(normY<-0.45) {
+                    int headW=spW_/3;
+                    for(int dx_=-headW;dx_<=headW;dx_++) {
+                        int sx_=scrX_+dx_+shkX;
+                        if(sx_<0||sx_>=SW||tY_>=zbuf[sx_])continue;
+                        uint32_t col=headCol;
+                        if(normY>-0.65&&normY<-0.55&&abs(dx_)<spW_/10)col=rgb(40,30,20);
+                        if(dx_<0) col=fogC(rgb((uint8_t)((col&0xFF)*0.88),((col>>8)&0xFF)*0.88,((col>>16)&0xFF)*0.88),dist3d);
+                        else col=fogC(col,dist3d);
+                        fb[screenY_*SW+sx_]=col;
+                    }
+                }
+                // Hat brim
+                if(normY>-0.78 && normY<-0.68) {
+                    int hatW=spW_/2+1;
+                    for(int dx_=-hatW;dx_<=hatW;dx_++) {
+                        int sx_=scrX_+dx_+shkX;
+                        if(sx_<0||sx_>=SW||tY_>=zbuf[sx_])continue;
+                        uint32_t col=hatCol;
+                        if(abs(dx_)==hatW)col=fogC(rgb((uint8_t)((col&0xFF)*0.7),((col>>8)&0xFF)*0.7,((col>>16)&0xFF)*0.7),dist3d);
+                        else col=fogC(col,dist3d);
+                        fb[screenY_*SW+sx_]=col;
+                    }
+                }
+                // Hat crown
+                if(normY>-0.95 && normY<-0.78) {
+                    int crownW=spW_/4;
+                    for(int dx_=-crownW;dx_<=crownW;dx_++) {
+                        int sx_=scrX_+dx_+shkX;
+                        if(sx_<0||sx_>=SW||tY_>=zbuf[sx_])continue;
+                        fb[screenY_*SW+sx_]=fogC(hatCol,dist3d);
+                    }
                 }
             }
+            // Shadow on ground
+            { int shadowW=spW_/2, shadowY=SH/2-bob+spH_/2+2;
+            if(shadowY>=0&&shadowY<SH) for(int dx_=-shadowW;dx_<=shadowW;dx_++){
+                int sx_=scrX_+dx_+shkX;
+                if(sx_<0||sx_>=SW)continue;
+                double edge=1.0-fabs((double)dx_/shadowW);
+                fb[shadowY*SW+sx_]=blendPixel(fb[shadowY*SW+sx_],rgb(20,15,10,(uint8_t)(edge*60)));
+            } }
         }
     }
 
